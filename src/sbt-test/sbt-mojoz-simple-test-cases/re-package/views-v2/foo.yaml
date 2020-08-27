@@ -1,0 +1,17 @@
+name:    foo
+table:   foo
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id
+
+name:    foo_2
+table:   foo_2
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id

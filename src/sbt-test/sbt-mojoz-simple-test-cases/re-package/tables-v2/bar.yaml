@@ -1,0 +1,4 @@
+table: bar
+columns:
+- id
+- name

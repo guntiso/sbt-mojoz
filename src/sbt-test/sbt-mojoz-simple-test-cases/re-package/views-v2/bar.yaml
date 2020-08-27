@@ -1,0 +1,8 @@
+name:    bar
+table:   bar
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id

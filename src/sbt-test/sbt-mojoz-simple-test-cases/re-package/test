@@ -1,0 +1,90 @@
+# build project
+> clean
+> package
+
+# check resources are created/copied to target
+$ exists target/scala-2.12/classes/tables/foo.yaml
+$ exists target/scala-2.12/classes/views/foo.yaml
+$ exists target/scala-2.12/resource_managed/main/-md-files.txt
+$ exists target/scala-2.12/classes/-md-files.txt
+
+# check Dtos.scala is created
+$ exists target/scala-2.12/src_managed/main/Dtos.scala
+# check dto classes are defined
+$ exists target/scala-2.12/classes/sample/Foo.class
+$ exists target/scala-2.12/classes/sample/Tables$Foo.class
+
+# ========= update views and tables and rebuild v2 =========
+
+# backup current views/tables will use later
+$ exec cp -R tables/ tables-v3/
+$ exec cp -R views/ views-v3/
+$ exists tables-v3/foo.yaml
+$ exists views-v3/foo.yaml
+
+# set second version of tables/views
+$ exec rm -R tables
+$ exec rm -R views
+$ exec cp -R tables-v2/ tables/
+$ exec cp -R views-v2/ views/
+$ exists tables/foo.yaml
+$ exists tables/bar.yaml
+$ exists views/foo.yaml
+$ exists views/bar.yaml
+
+# re-build project
+> clean
+> package
+
+# check resources are created/copied to target
+$ exists target/scala-2.12/classes/tables/foo.yaml
+$ exists target/scala-2.12/classes/tables/bar.yaml
+$ exists target/scala-2.12/classes/views/foo.yaml
+$ exists target/scala-2.12/classes/views/bar.yaml
+$ exists target/scala-2.12/resource_managed/main/-md-files.txt
+$ exists target/scala-2.12/classes/-md-files.txt
+
+# check Dtos.scala is created
+$ exists target/scala-2.12/src_managed/main/Dtos.scala
+# check dto classes are defined
+$ exists target/scala-2.12/classes/sample/Foo.class
+$ exists target/scala-2.12/classes/sample/Foo2.class
+$ exists target/scala-2.12/classes/sample/Bar.class
+$ exists target/scala-2.12/classes/sample/Tables$Foo.class
+$ exists target/scala-2.12/classes/sample/Tables$Foo2.class
+$ exists target/scala-2.12/classes/sample/Tables$Bar.class
+
+# ========= revert views and tables and rebuild v3 =========
+
+# set third version of tables/views
+$ exec rm -R tables
+$ exec rm -R views
+$ exec cp -R tables-v3/ tables/
+$ exec cp -R views-v3/ views/
+$ exists tables/foo.yaml
+$ absent tables/bar.yaml
+$ exists views/foo.yaml
+$ absent views/bar.yaml
+
+# re-build project
+> clean
+> package
+
+# check resources are created/copied to target
+$ exists target/scala-2.12/classes/tables/foo.yaml
+$ absent target/scala-2.12/classes/tables/bar.yaml
+$ exists target/scala-2.12/classes/views/foo.yaml
+$ absent target/scala-2.12/classes/views/bar.yaml
+$ exists target/scala-2.12/resource_managed/main/-md-files.txt
+$ exists target/scala-2.12/classes/-md-files.txt
+
+# check Dtos.scala is created
+$ exists target/scala-2.12/src_managed/main/Dtos.scala
+# check dto classes are defined
+$ exists target/scala-2.12/classes/sample/Foo.class
+$ absent target/scala-2.12/classes/sample/Foo2.class
+$ absent target/scala-2.12/classes/sample/Bar.class
+$ exists target/scala-2.12/classes/sample/Tables$Foo.class
+$ absent target/scala-2.12/classes/sample/Tables$Foo2.class
+$ absent target/scala-2.12/classes/sample/Tables$Bar.class
+

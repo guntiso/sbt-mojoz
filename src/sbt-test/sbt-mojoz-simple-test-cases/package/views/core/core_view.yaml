@@ -1,0 +1,8 @@
+name:    core_view
+table:   core_table
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id

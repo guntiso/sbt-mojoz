@@ -1,0 +1,22 @@
+# Test if multiple projects can have their separate table metadata
+
+# Fails at first time, but just to make sure, run multiple times
+> buildsource
+
+> clean
+> compile
+
+> clean
+> compile
+
+> clean
+> compile
+
+> clean
+> compile
+
+> clean
+> compile
+
+> clean
+> compile

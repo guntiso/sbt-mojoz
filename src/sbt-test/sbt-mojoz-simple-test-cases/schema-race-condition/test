@@ -1,0 +1,40 @@
+# build project 10 times. it should throw error if tasks are not properly ordered and schema generated from parent not child
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check
+
+> clean
+> compile
+> check

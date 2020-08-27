@@ -1,0 +1,8 @@
+name:    child
+table:   child
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id

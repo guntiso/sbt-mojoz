@@ -1,0 +1,4 @@
+table: child
+columns:
+- id
+- name

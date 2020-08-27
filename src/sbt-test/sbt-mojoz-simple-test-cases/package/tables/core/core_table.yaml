@@ -1,0 +1,4 @@
+table: core_table
+columns:
+- id
+- name

@@ -1,0 +1,9 @@
+table: foo
+columns:
+- id
+- name
+
+table: foo_2
+columns:
+- id
+- name

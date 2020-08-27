@@ -1,0 +1,20 @@
+# build project
+> clean
+> compile
+
+# resource copy/creation is triggered only when running package or run tasks
+$ absent target/scala-2.12/classes/tables/foo.yaml
+$ absent target/scala-2.12/classes/views/foo.yaml
+$ absent target/scala-2.12/resource_managed/main/-md-files.txt
+
+# check Dtos.scala is not created
+$ absent target/scala-2.12/src_managed/main/Dtos.scala
+# check no dto classes are defined
+$ absent target/scala-2.12/classes/dto/Foo.class
+$ absent target/scala-2.12/classes/dto/Bar.class
+$ absent target/scala-2.12/classes/dto/Tables$Foo.class
+$ absent target/scala-2.12/classes/dto/Tables$Bar.class
+
+
+# no schema.sql generation in basic build
+$ absent schema.sql

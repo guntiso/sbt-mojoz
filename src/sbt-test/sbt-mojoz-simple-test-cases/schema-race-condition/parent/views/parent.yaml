@@ -1,0 +1,8 @@
+name:    parent
+table:   parent
+api: sistema_lietot list
+fields:
+- id
+- name
+order:
+- id

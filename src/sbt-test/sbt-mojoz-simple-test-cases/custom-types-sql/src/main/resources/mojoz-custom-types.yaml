@@ -1,0 +1,9 @@
+type:       c4
+scala name: String
+xsd name  : string
+yaml:
+- c4                -> 4
+- c4 4              -> 4
+postgresql:
+- c4                -> varchar(4)
+- c4 4              -> varchar(4)

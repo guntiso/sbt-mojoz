@@ -1,0 +1,18 @@
+# build project
+> clean
+> package
+
+# check resources are created/copied to target
+$ exists target/scala-2.12/classes/tables/foo.yaml
+$ exists target/scala-2.12/classes/views/foo.yaml
+$ absent target/scala-2.12/resource_managed/main/-md-files.txt
+$ absent target/scala-2.12/classes/-md-files.txt
+
+# check Dtos.scala is created
+$ exists target/scala-2.12/src_managed/main/Dtos.scala
+# check dto classes are defined
+$ exists target/scala-2.12/classes/sample/Foo.class
+$ exists target/scala-2.12/classes/sample/Tables$Foo.class
+
+# no schema.sql generation in basic build
+$ absent schema.sql
