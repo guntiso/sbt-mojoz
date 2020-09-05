@@ -9,7 +9,7 @@ import sbt.plugins.JvmPlugin
 object MojozGenerateSchemaPlugin extends AutoPlugin {
   object autoImport {
     val mojozSchemaSqlFile = settingKey[File]("File where to write schema sql")
-    val mojozSchemaSqlWriter = taskKey[SqlWriter]("SqlWriter used to generate schema, check mojoz.metadata.out.SqlWriter for already available writers")
+    val mojozSchemaSqlWriter = taskKey[SqlWriter]("SqlWriter used to generate schema, see mojoz.metadata.out.SqlWriter for available writers")
     val mojozGenerateSchemaSqlFile = taskKey[File]("Generates schema sql")
     val mojozPrintSchemaSql = inputKey[Unit]("Prints schema sql string for (space-delimited) table name(s)")
 
@@ -59,7 +59,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
     },
 
     // not exactly source generation, but we want schema to be generated during compilation
-    // to disable this 'effect' add to your buid -  mojozGenerateSchemaSqlFile := { null }
+    // to disable this 'effect' add to your build - mojozGenerateSchemaSqlFile := { null }
     sourceGenerators in Compile += mojozGenerateSchemaSqlFile.map(_ => Seq()).taskValue
   )
 
