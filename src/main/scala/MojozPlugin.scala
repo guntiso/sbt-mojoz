@@ -178,19 +178,21 @@ object MojozPlugin extends AutoPlugin {
       val classBuilder = mojozScalaClassWriter.value
 
       val mapping = s"""
-                       |object Tables {
-                       |  ${tableMd.tableDefs.map(t => s"class ${classBuilder.scalaClassName(t.name)} {}").mkString("\n  ")}
-                       |}
-                       |object DtoMapping {
-                       |  val viewNameToClass = Map[String, Class[_ <: Dto]](
-                       |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${classBuilder.scalaClassName(v.name)}]""").mkString(",\n    ")}
-                       |  )
-                       |  val viewClassToTableClass = Map[Class[_ <: Dto], Class[_]](
-                       |    ${viewDefs.filter(_.table != null).map(v => s"classOf[${classBuilder.scalaClassName(v.name)}]" +
-        s" -> classOf[Tables.${classBuilder.scalaClassName(v.table)}]").mkString(",\n    ")}
-                       |  )
-                       |}
-                       |""".stripMargin.trim
+        |object Tables {
+        |  ${tableMd.tableDefs.map(t => s"class ${classBuilder.scalaClassName(t.name)} {}").mkString("\n  ")}
+        |}
+        |object DtoMapping {
+        |  val viewNameToClass = Map[String, Class[_ <: Dto]](
+        |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${classBuilder.scalaClassName(v.name)}]""").mkString(",\n    ")}
+        |  )
+        |  val viewClassToTableClass = Map[Class[_ <: Dto], Class[_]](
+        |    ${viewDefs.filter(_.table != null).map(v =>
+                s"classOf[${classBuilder.scalaClassName(v.name)}] -> classOf[Tables.${classBuilder.scalaClassName(v.table)}]"
+               ).mkString(",\n    ")
+             }
+        |  )
+        |}
+        |""".stripMargin.trim
       mapping
     },
 
