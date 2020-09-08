@@ -33,7 +33,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozViewMetadataLoader = taskKey[YamlViewDefLoader]("View metadata loader")
     val mojozViewMetadata = taskKey[List[ViewDef[FieldDef[Type]]]]("View metadata")
     val mojozShouldCompileViews = settingKey[Boolean]("Should views be compiled, defaults to true")
-    val mojozShowFaildedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
+    val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All source files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
     val mojozFunctionSignaturesClass = settingKey[Class[_]]("Function signatures class for view compilation")
@@ -97,7 +97,7 @@ object MojozPlugin extends AutoPlugin {
     mojozFunctionSignaturesClass := classOf[org.tresql.compiling.TresqlFunctionSignatures],
     mojozTresqlMacros := None,
     mojozShouldCompileViews := true,
-    mojozShowFaildedViewQuery := false,
+    mojozShowFailedViewQuery := false,
     mojozQuerease := {
       val tableMd = mojozTableMetadata.value
       val xViewDefs = mojozViewMetadataLoader.value.extendedViewDefs
@@ -151,7 +151,7 @@ object MojozPlugin extends AutoPlugin {
             // TODO cache it for identical compiler
             try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
               val msg = s"\nFailed to compile viewdef ${viewDef.name}: ${ex.getMessage}" +
-                (if (mojozShowFaildedViewQuery.value) s"\n$q" else "")
+                (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
               throw new RuntimeException(msg, ex)
             }
           }
