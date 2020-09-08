@@ -99,13 +99,10 @@ object MojozPlugin extends AutoPlugin {
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
     mojozQuerease := {
-      val tableMd = mojozTableMetadata.value
-      val xViewDefs = mojozViewMetadataLoader.value.extendedViewDefs
-      val childViews = xViewDefs.values.flatMap(_.fields.filter(_.type_.isComplexType)).map(_.type_.name).toSet
       new Querease with ScalaDtoQuereaseIo {
         override lazy val typeDefs = mojozTypeDefs.value
-        override lazy val viewDefs = xViewDefs.asInstanceOf[Map[String, ViewDef]]
-        override lazy val tableMetadata = tableMd
+        override lazy val viewDefs = mojozViewMetadataLoader.value.extendedViewDefs.asInstanceOf[Map[String, ViewDef]]
+        override lazy val tableMetadata = mojozTableMetadata.value
         override lazy val functionSignaturesClass: Class[_] = mojozFunctionSignaturesClass.value
         override lazy val joinsParser = TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozFunctionSignaturesClass.value)
       }
