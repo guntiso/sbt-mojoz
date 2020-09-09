@@ -101,7 +101,7 @@ object MojozPlugin extends AutoPlugin {
     mojozQuerease := {
       new Querease with ScalaDtoQuereaseIo {
         override lazy val typeDefs = mojozTypeDefs.value
-        override lazy val viewDefs = mojozViewMetadataLoader.value.extendedViewDefs.asInstanceOf[Map[String, ViewDef]]
+        override lazy val nameToViewDef = mojozViewMetadataLoader.value.extendedViewDefs.asInstanceOf[Map[String, ViewDef]]
         override lazy val tableMetadata = mojozTableMetadata.value
         override lazy val functionSignaturesClass: Class[_] = mojozFunctionSignaturesClass.value
         override lazy val joinsParser = TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozFunctionSignaturesClass.value)
@@ -120,38 +120,34 @@ object MojozPlugin extends AutoPlugin {
     mojozCompileViews := {
       // TODO recompile only changed views
       def compileViews: String = {
-        val tableMd = mojozTableMetadata.value
-        val xViewDefs = mojozViewMetadataLoader.value.extendedViewDefs
-        val childViews = xViewDefs.values.flatMap(_.fields.filter(_.type_.isComplexType)).map(_.type_.name).toSet
         val qe = mojozQuerease.value
+        val tableMd = qe.tableMetadata
+        val xViewDefs = qe.nameToViewDef
+        val childViews = xViewDefs.values.flatMap(_.fields.filter(_.type_.isComplexType)).map(_.type_.name).toSet
 
         val log = streams.value.log
         val startTime = Platform.currentTime
         val viewsToCompile =
           xViewDefs.values.toList
           .filter(viewDef => !childViews.contains(viewDef.name)) // compile only top-level views
-          .filter(viewDef =>
-            viewDef.fields != null && viewDef.fields.nonEmpty &&
-            (viewDef.table != null || viewDef.joins != null && viewDef.joins.nonEmpty)
-          )
           .sortBy(_.name)
-        log.info(s"Compiling ${viewsToCompile.size} top-level, table-based views (${xViewDefs.size} views total)")
+        log.info(s"Compiling ${viewsToCompile.size} top-level views (${xViewDefs.size} views total)")
         val compiler = new org.tresql.compiling.Compiler {
           override val macros = new MacroResourcesImpl(mojozTresqlMacros.value.orNull)
-          override val metadata = new TresqlMetadata(tableMd.tableDefs, mojozTypeDefs.value) with CompilerFunctionMetadata {
-            override def compilerFunctionSignatures = mojozFunctionSignaturesClass.value
+          override val metadata = new TresqlMetadata(tableMd.tableDefs, qe.typeDefs) with CompilerFunctionMetadata {
+            override def compilerFunctionSignatures = qe.functionSignaturesClass
           }
         }
-        viewsToCompile
-          .foreach { viewDef =>
-            val q = qe.queryStringAndParams(viewDef, Map.empty)._1
-            // TODO cache it for identical compiler
-            try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
-              val msg = s"\nFailed to compile viewdef ${viewDef.name}: ${ex.getMessage}" +
-                (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
-              throw new RuntimeException(msg, ex)
-            }
+        viewsToCompile.flatMap { viewDef =>
+          qe.allQueryStrings(viewDef).map(q => viewDef.name -> q)
+        }.foreach { case (viewName, q) =>
+          // TODO cache it for identical compiler
+          try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
+            val msg = s"\nFailed to compile viewdef $viewName}: ${ex.getMessage}" +
+              (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
+            throw new RuntimeException(msg, ex)
           }
+        }
         val endTime = Platform.currentTime
         log.info(s"View compilation done in ${endTime - startTime} ms")
         s"${viewsToCompile.size} views compiled"
