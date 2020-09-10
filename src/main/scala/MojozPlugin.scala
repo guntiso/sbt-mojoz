@@ -35,7 +35,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozShouldCompileViews = settingKey[Boolean]("Should views be compiled, defaults to true")
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
-    val mojozAllSourceFiles = taskKey[Seq[File]]("All source files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
+    val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
     val mojozFunctionSignaturesClass = settingKey[Class[_]]("Function signatures class for view compilation")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozTresqlMacros = settingKey[Option[Any]]("Object containing tresql compiler macro functions")
@@ -109,7 +109,7 @@ object MojozPlugin extends AutoPlugin {
     },
     mojozAllSourceFiles := {
       Seq(
-        mojozMdConventionsResources.value,
+        (mojozMdConventionsResources.value ** "*-patterns.txt").get,
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
         mojozViewMetadataFiles.value.map(_._1),
@@ -234,8 +234,11 @@ object MojozPlugin extends AutoPlugin {
       watchSources.value ++
       mojozTableMetadataFolders.value.map(WatchSource(_)) ++
       mojozViewMetadataFolders.value.map(WatchSource(_)) ++
-      mojozTableMetadataFiles.value.map(f => WatchSource(f._1)) ++
-      mojozViewMetadataFiles.value.map(f => WatchSource(f._1))
+      mojozAllSourceFiles.value.groupBy(_.getParentFile.getAbsolutePath).map {
+        case (path, files) =>
+          val names = files.map(_.getName).toSet
+          WatchSource(new File(path), includeFilter = new SimpleFilter(names.contains), excludeFilter = NothingFilter)
+      }
     }
   )
 }
