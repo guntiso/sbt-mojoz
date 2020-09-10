@@ -35,7 +35,8 @@ object MojozPlugin extends AutoPlugin {
     val mojozShouldCompileViews = settingKey[Boolean]("Should views be compiled, defaults to true")
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
-    val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
+    val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
+    val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
     val mojozFunctionSignaturesClass = settingKey[Class[_]]("Function signatures class for view compilation")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozTresqlMacros = settingKey[Option[Any]]("Object containing tresql compiler macro functions")
@@ -107,19 +108,20 @@ object MojozPlugin extends AutoPlugin {
         override lazy val joinsParser = TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozFunctionSignaturesClass.value)
       }
     },
-    mojozAllSourceFiles := {
+    mojozAllCompilerMetadataFiles := {
       Seq(
         (mojozMdConventionsResources.value ** "*-patterns.txt").get,
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
-        mojozViewMetadataFiles.value.map(_._1),
         // TODO include macros files in mojozAllSourceFiles,
         // TODO include function signatures files in mojozAllSourceFiles,
       ).flatMap(x => x)
     },
+    mojozAllSourceFiles :=
+      mojozAllCompilerMetadataFiles.value ++
+      mojozViewMetadataFiles.value.map(_._1),
     mojozCompileViews := {
-      // TODO recompile only changed views
-      def compileViews: String = {
+      def compileViews(previouslyCompiledQueries: Set[String]): Set[String] = {
         val qe = mojozQuerease.value
         val tableMd = qe.tableMetadata
         val xViewDefs = qe.nameToViewDef
@@ -138,26 +140,56 @@ object MojozPlugin extends AutoPlugin {
             override def compilerFunctionSignatures = qe.functionSignaturesClass
           }
         }
-        viewsToCompile.flatMap { viewDef =>
+        val viewNamesAndQueriesToCompile = viewsToCompile.flatMap { viewDef =>
           qe.allQueryStrings(viewDef).map(q => viewDef.name -> q)
-        }.foreach { case (viewName, q) =>
-          // TODO cache it for identical compiler
-          try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
-            val msg = s"\nFailed to compile viewdef $viewName}: ${ex.getMessage}" +
-              (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
-            throw new RuntimeException(msg, ex)
+        }
+        val compiledQueries = collection.mutable.Set[String](previouslyCompiledQueries.toSeq: _*)
+        var compiledCount = 0
+        viewNamesAndQueriesToCompile.foreach { case (viewName, q) =>
+          if (!compiledQueries.contains(q)) {
+            try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
+              val msg = s"\nFailed to compile viewdef $viewName}: ${ex.getMessage}" +
+                (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
+              throw new RuntimeException(msg, ex)
+            }
+            compiledCount += 1
+            compiledQueries += q
           }
         }
         val endTime = Platform.currentTime
-        log.info(s"View compilation done in ${endTime - startTime} ms")
-        s"${viewsToCompile.size} views compiled"
+        val allQueries = viewNamesAndQueriesToCompile.map(_._2).toSet
+        log.info(
+          s"View compilation done in ${endTime - startTime} ms, " +
+          s"queries compiled: $compiledCount" +
+          (if (compiledCount != allQueries.size) s" of ${allQueries.size}" else ""))
+        allQueries // to cache
       }
       import sbt.util.CacheImplicits._
       import scala.language.existentials
-      val cacheStore = streams.value.cacheStoreFactory make "mojoz-all-source-file-hashes"
+      val allSourcesCacheStore       = streams.value.cacheStoreFactory make "mojoz-all-source-file-hashes"
+      val compilerMetadataCacheStore = streams.value.cacheStoreFactory make "mojoz-compiler-metadata-file-hashes"
+      val compiledQueriesCacheStore  = streams.value.cacheStoreFactory make "mojoz-compiled-queries"
       val allSourceFiles = mojozAllSourceFiles.value
-      val cachedCompileViews = Tracked.inputChanged[Seq[HashFileInfo], String](cacheStore) {
-        case (isChanged: Boolean, _) => if (isChanged) compileViews else "not changed"
+      val compilerMetadataFiles = mojozAllCompilerMetadataFiles.value
+      val cachedCompileViews = Tracked.inputChanged[Seq[HashFileInfo], String](allSourcesCacheStore) {
+        case (isChanged: Boolean, _) =>
+          if (isChanged) {
+            val cachedCompileViewsM = Tracked.inputChanged[Seq[HashFileInfo], String](compilerMetadataCacheStore) {
+              case (isCompilerChanged: Boolean, _) =>
+                val cachedCompileViewsQ = Tracked.lastOutput[Boolean, Set[String]](compiledQueriesCacheStore) {
+                  case (isCompilerChanged, None) =>
+                    compileViews(Set.empty)
+                  case (isCompilerChanged, Some(previouslyCompiledQueries)) =>
+                    if (isCompilerChanged)
+                      compileViews(Set.empty)
+                    else
+                      compileViews(previouslyCompiledQueries)
+                }
+                cachedCompileViewsQ(isCompilerChanged)
+                "changed"
+            }
+            cachedCompileViewsM(compilerMetadataFiles.map(FileInfo.hash(_)))
+          } else "not changed"
       }
       cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
     },
