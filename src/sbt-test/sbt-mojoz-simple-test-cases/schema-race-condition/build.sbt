@@ -3,10 +3,10 @@ lazy val commonSettings = Seq(
   organization := "org.mojoz",
   version := "0.1",
   scalaVersion := "2.12.12",
-  mojozMdConventions := mojoz.metadata.io.MdConventions,
-  mojozTypeDefs := mojoz.metadata.TypeMetadata.customizedTypeDefs,
+  mojozMdConventions := org.mojoz.metadata.io.MdConventions,
+  mojozTypeDefs := org.mojoz.metadata.TypeMetadata.customizedTypeDefs,
   mojozSchemaSqlFile := file("db/schema.sql"),
-  mojozSchemaSqlWriter := mojoz.metadata.out.SqlWriter.postgresql(typeDefs = mojozTypeDefs.value)
+  mojozSchemaSqlWriter := org.mojoz.metadata.out.SqlWriter.postgresql(typeDefs = mojozTypeDefs.value)
 )
 
 

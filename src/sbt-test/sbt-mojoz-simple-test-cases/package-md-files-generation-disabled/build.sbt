@@ -9,7 +9,7 @@ scalaVersion := "2.12.12"
 
 lazy val root = (project in file(".")).enablePlugins(MojozPlugin)
 
-mojozMdConventions := mojoz.metadata.io.MdConventions
+mojozMdConventions := org.mojoz.metadata.io.MdConventions
 
 mojozDtosPackage := "sample"
 
@@ -17,6 +17,7 @@ mojozDtosImports := Seq("sbtmojoz.test._")
 
 mojozShouldGenerateMdFileList := false
 
-mojozScalaClassWriter := new querease.ScalaDtoGenerator(mojozQuerease.value) {
-  override def scalaClassName(name: String): String = mojoz.metadata.Naming.camelize(name)
+mojozScalaClassWriter := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
+  override def scalaClassName(name: String): String =
+    name.split("[_\\-\\.]+").toList.map(_.toLowerCase.capitalize).mkString
 }

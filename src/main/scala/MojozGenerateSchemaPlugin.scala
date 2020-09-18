@@ -1,6 +1,6 @@
 package org.mojoz
 
-import mojoz.metadata.out.SqlWriter
+import org.mojoz.metadata.out.SqlWriter
 import sbt.Keys._
 import sbt._
 import sbt.plugins.JvmPlugin
@@ -9,7 +9,7 @@ import sbt.plugins.JvmPlugin
 object MojozGenerateSchemaPlugin extends AutoPlugin {
   object autoImport {
     val mojozSchemaSqlFile = settingKey[File]("File where to write schema sql")
-    val mojozSchemaSqlWriter = taskKey[SqlWriter]("SqlWriter used to generate schema, see mojoz.metadata.out.SqlWriter for available writers")
+    val mojozSchemaSqlWriter = taskKey[SqlWriter]("SqlWriter used to generate schema, see org.mojoz.metadata.out.SqlWriter for available writers")
     val mojozGenerateSchemaSqlFile = taskKey[File]("Generates schema sql")
     val mojozPrintSchemaSql = inputKey[Unit]("Prints schema sql string for (space-delimited) table name(s)")
 
@@ -42,7 +42,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
     mojozPrintSchemaSql := {
       import sbt.complete.DefaultParsers._
-      import mojoz.metadata.out.SqlWriter
+      import org.mojoz.metadata.out.SqlWriter
       // get the result of parsing
       val args: Seq[String] = spaceDelimited("<arg>").parsed
       val allTableNames =

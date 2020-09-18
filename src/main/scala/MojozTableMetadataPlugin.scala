@@ -1,10 +1,10 @@
 package org.mojoz
 
 
-import mojoz.metadata._
-import mojoz.metadata.in.{YamlMd, YamlTableDefLoader, YamlTypeDefLoader}
-import mojoz.metadata.io.MdConventions
-import querease.TresqlMetadata
+import org.mojoz.metadata._
+import org.mojoz.metadata.in.{YamlMd, YamlTableDefLoader, YamlTypeDefLoader}
+import org.mojoz.metadata.io.MdConventions
+import org.mojoz.querease.TresqlMetadata
 import sbt.Keys.{baseDirectory, resourceGenerators, resourceManaged, unmanagedResources}
 import sbt._
 import sbt.plugins.JvmPlugin

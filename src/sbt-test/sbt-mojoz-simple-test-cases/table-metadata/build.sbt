@@ -10,7 +10,7 @@ resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snaps
 
 lazy val root = (project in file(".")).enablePlugins(MojozTableMetadataPlugin)
 
-mojozMdConventions := mojoz.metadata.io.MdConventions
+mojozMdConventions := org.mojoz.metadata.io.MdConventions
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8",
   "-Xmacro-settings:metadataFactoryClass=querease.TresqlMetadataFactory" +
