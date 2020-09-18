@@ -1,6 +1,6 @@
 package org.mojoz
 
-import org.mojoz.metadata.out.SqlWriter
+import org.mojoz.metadata.out.SqlGenerator
 import sbt.Keys._
 import sbt._
 import sbt.plugins.JvmPlugin
@@ -9,7 +9,7 @@ import sbt.plugins.JvmPlugin
 object MojozGenerateSchemaPlugin extends AutoPlugin {
   object autoImport {
     val mojozSchemaSqlFile = settingKey[File]("File where to write schema sql")
-    val mojozSchemaSqlWriter = taskKey[SqlWriter]("SqlWriter used to generate schema, see org.mojoz.metadata.out.SqlWriter for available writers")
+    val mojozSchemaSqlGenerator = taskKey[SqlGenerator]("SqlGenerator used to generate schema, see org.mojoz.metadata.out.SqlGenerator for available generators")
     val mojozGenerateSchemaSqlFile = taskKey[File]("Generates schema sql")
     val mojozPrintSchemaSql = inputKey[Unit]("Prints schema sql string for (space-delimited) table name(s)")
 
@@ -36,13 +36,13 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
       val tableMd = mojozTableMetadata.value
       val allTables = tableMd.tableDefs.map(_.name).sorted
-      IO.write(mojozSchemaSqlFile.value, mojozSchemaSqlWriter.value.schema(allTables map tableMd.tableDef))
+      IO.write(mojozSchemaSqlFile.value, mojozSchemaSqlGenerator.value.schema(allTables map tableMd.tableDef))
       mojozSchemaSqlFile.value
     },
 
     mojozPrintSchemaSql := {
       import sbt.complete.DefaultParsers._
-      import org.mojoz.metadata.out.SqlWriter
+      import org.mojoz.metadata.out.SqlGenerator
       // get the result of parsing
       val args: Seq[String] = spaceDelimited("<arg>").parsed
       val allTableNames =
@@ -54,7 +54,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
         val tableNames =
           if (args.size == 1 && args(0) == "*") allTableNames
           else args
-        println(mojozSchemaSqlWriter.value.schema(tableNames.toList map mojozTableMetadata.value.tableDef))
+        println(mojozSchemaSqlGenerator.value.schema(tableNames.toList map mojozTableMetadata.value.tableDef))
       }
     },
 

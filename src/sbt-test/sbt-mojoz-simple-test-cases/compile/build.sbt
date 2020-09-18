@@ -13,7 +13,7 @@ mojozMdConventions := org.mojoz.metadata.io.MdConventions
 
 mojozDtosImports := Seq("sbtmojoz.test._")
 
-mojozScalaClassWriter := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
+mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
   override def scalaClassName(name: String): String =
     name.split("[_\\-\\.]+").toList.map(_.toLowerCase.capitalize).mkString
 }
