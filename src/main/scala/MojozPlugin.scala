@@ -96,7 +96,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
 
     mojozFunctionSignaturesClass := classOf[org.tresql.compiling.TresqlFunctionSignatures],
-    mojozTresqlMacros := None,
+    mojozTresqlMacros := Some(org.mojoz.querease.QuereaseMacros),
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
     mojozQuerease := {
