@@ -5,13 +5,13 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-mojoz",
     organization := "org.mojoz",
-    version := "2.0.0-SNAPSHOT",
+    version := "2.0.0",
     scalaVersion := "2.12.12",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
-      "org.mojoz"                  %% "querease"                          % "5.0.0-SNAPSHOT",
-      "org.mojoz"                  %% "mojoz"                             % "2.0.0-SNAPSHOT",
+      "org.mojoz"                  %% "mojoz"                             % "2.0.0",
+      "org.mojoz"                  %% "querease"                          % "5.0.0",
       "org.tresql"                 %% "tresql"                            % "10.0.0"
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
