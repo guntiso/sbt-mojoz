@@ -191,7 +191,8 @@ object MojozPlugin extends AutoPlugin {
             cachedCompileViewsM(compilerMetadataFiles.map(FileInfo.hash(_)))
           } else "not changed"
       }
-      cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
+      if (mojozShouldCompileViews.value)
+        cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
     },
 
     mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value),
