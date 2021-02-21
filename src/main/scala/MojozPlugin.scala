@@ -75,7 +75,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateMdFileList := {
       if(mojozShouldGenerateMdFileList.value) {
         val file = new File(mojozMdFilesFileName.value)
-        val contents = mojozMetadataFilesForResources.value.map(_._2).sorted.mkString("", "\n", "\n")
+        val contents = mojozMetadataFilesForResources.value.map(_._2).toSet.toSeq.sorted.mkString("", "\n", "\n")
         IO.write(file, contents)
         Seq(file)
       } else Seq()
