@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-mojoz",
     organization := "org.mojoz",
-    version := "2.1.0-SNAPSHOT",
+    version := "2.1.0",
     scalaVersion := "2.12.12",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
