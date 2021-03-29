@@ -150,7 +150,7 @@ object MojozPlugin extends AutoPlugin {
         viewNamesAndQueriesToCompile.foreach { case (viewName, q) =>
           if (!compiledQueries.contains(q)) {
             try compiler.compile(compiler.parseExp(q)) catch { case NonFatal(ex) =>
-              val msg = s"\nFailed to compile viewdef $viewName}: ${ex.getMessage}" +
+              val msg = s"\nFailed to compile viewdef $viewName: ${ex.getMessage}" +
                 (if (mojozShowFailedViewQuery.value) s"\n$q" else "")
               throw new RuntimeException(msg, ex)
             }
