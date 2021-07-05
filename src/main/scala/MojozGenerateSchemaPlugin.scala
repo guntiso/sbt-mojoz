@@ -60,7 +60,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
     // not exactly source generation, but we want schema to be generated during compilation
     // to disable this 'effect' add to your build - mojozGenerateSchemaSqlFile := { null }
-    sourceGenerators in Compile += mojozGenerateSchemaSqlFile.map(_ => Seq()).taskValue
+    Compile / sourceGenerators += mojozGenerateSchemaSqlFile.map(_ => Seq()).taskValue
   )
 
 }

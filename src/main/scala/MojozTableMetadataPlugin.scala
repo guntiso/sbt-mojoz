@@ -44,7 +44,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     },
     mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
-    mojozMdConventionsResources := (unmanagedResources in Compile).value,
+    mojozMdConventionsResources := (Compile / unmanagedResources).value,
     mojozMdConventions := {
       val resources = mojozMdConventionsResources.value
       import MdConventions._
@@ -60,7 +60,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     },
 
     mojozCustomTypesFile :=
-      ((unmanagedResources in Compile).value ** "mojoz-custom-types.yaml").get.headOption,
+      ((Compile / unmanagedResources).value ** "mojoz-custom-types.yaml").get.headOption,
 
     mojozTypeDefs :=
       mojozCustomTypesFile.value
@@ -71,7 +71,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
 
     mojozTableMetadata := new TableMetadata(new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs, mojozDbNaming.value),
 
-    mojozTresqlTableMetadataFileName := ((resourceManaged in Compile).value / "tresql-table-metadata.yaml").getAbsolutePath,
+    mojozTresqlTableMetadataFileName := ((Compile / resourceManaged).value / "tresql-table-metadata.yaml").getAbsolutePath,
     mojozGenerateTresqlTableMetadata := {
       val file =  new File(mojozTresqlTableMetadataFileName.value)
       val contents = new TresqlMetadata(mojozTableMetadata.value.tableDefs.sortBy(_.name), mojozTypeDefs.value).tableMetadataString
@@ -79,6 +79,6 @@ object MojozTableMetadataPlugin extends AutoPlugin {
       file
     },
 
-    resourceGenerators in Compile += mojozGenerateTresqlTableMetadata.map(Seq(_)).taskValue
+    Compile / resourceGenerators += mojozGenerateTresqlTableMetadata.map(Seq(_)).taskValue
   )
 }

@@ -69,7 +69,7 @@ object MojozPlugin extends AutoPlugin {
     },
 
     mojozMetadataFilesForResources := mojozTableMetadataFiles.value ++ mojozViewMetadataFiles.value,
-    mojozMdFilesFileName := ((resourceManaged in Compile).value / "-md-files.txt").getAbsolutePath,
+    mojozMdFilesFileName := ((Compile / resourceManaged).value / "-md-files.txt").getAbsolutePath,
 
     mojozShouldGenerateMdFileList := true,
     mojozGenerateMdFileList := {
@@ -81,7 +81,7 @@ object MojozPlugin extends AutoPlugin {
       } else Seq()
     },
 
-    resourceGenerators in Compile += mojozGenerateMdFileList.taskValue,
+    Compile / resourceGenerators += mojozGenerateMdFileList.taskValue,
 
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
@@ -227,7 +227,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosScala := {
       val compiled = mojozCompileViews.value
 
-      val file = (sourceManaged in Compile).value / mojozGenerateDtosScalaFileName.value
+      val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
@@ -239,17 +239,17 @@ object MojozPlugin extends AutoPlugin {
       file
     },
 
-    sourceGenerators in Compile += mojozGenerateDtosScala.map(Seq(_)).taskValue,
+    Compile / sourceGenerators += mojozGenerateDtosScala.map(Seq(_)).taskValue,
 
-    copyResources in Compile := {
+    Compile / copyResources := {
       val taskStreams = streams.value
-      val classDir = (classDirectory in Compile).value
+      val classDir = (Compile / classDirectory).value
       val cacheStore = streams.value.cacheStoreFactory make "copy-resources"
       val mappings = mojozMetadataFilesForResources.value.map(f => (f._1, classDir / f._2))
 
       taskStreams.log.debug("result" + mappings.mkString("\n\t","\n\t",""))
       Sync.sync(cacheStore)( mappings )
-      (copyResources in Compile).value ++ mappings
+      (Compile / copyResources).value ++ mappings
     },
 
     mojozGeneratedFiles := {
