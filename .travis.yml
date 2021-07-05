@@ -1,7 +1,7 @@
 language: scala
 dist: xenial
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean scripted
+  - sbt ++$TRAVIS_SCALA_VERSION clean scripted versionPolicyCheck
 scala:
   - 2.12.14
 jdk:
