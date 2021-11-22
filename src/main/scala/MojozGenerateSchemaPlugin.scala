@@ -36,7 +36,8 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
       val tableMd = mojozTableMetadata.value
       val allTables = tableMd.tableDefs.map(_.name).sorted
-      IO.write(mojozSchemaSqlFile.value, mojozSchemaSqlGenerator.value.schema(allTables map tableMd.tableDef))
+      val db = null // FIXME support multiple databases and schema generators
+      IO.write(mojozSchemaSqlFile.value, mojozSchemaSqlGenerator.value.schema(allTables.map(tableMd.tableDef(_, db))))
       mojozSchemaSqlFile.value
     },
 
@@ -54,7 +55,8 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
         val tableNames =
           if (args.size == 1 && args(0) == "*") allTableNames
           else args
-        println(mojozSchemaSqlGenerator.value.schema(tableNames.toList map mojozTableMetadata.value.tableDef))
+        val db = null // FIXME support multiple databases and schema generators
+        println(mojozSchemaSqlGenerator.value.schema(tableNames.toList.map(mojozTableMetadata.value.tableDef(_, db))))
       }
     },
 
