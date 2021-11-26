@@ -13,6 +13,4 @@ mojozMdConventions := org.mojoz.metadata.io.MdConventions
 
 mojozDtosImports := Seq("sbtmojoz.test._")
 
-mojozSchemaSqlFile := file("db/creation/schema.sql")
-
-mojozSchemaSqlGenerator := org.mojoz.metadata.out.SqlGenerator.postgresql(typeDefs = mojozTypeDefs.value)
+mojozSchemaSqlDirectory := file("db/creation")

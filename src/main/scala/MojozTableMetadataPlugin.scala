@@ -23,6 +23,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     val mojozTableMetadataFiles = taskKey[Seq[(File, String)]]("All table metadata files + relative paths they are kept in")
     val mojozRawTableMetadata = taskKey[Seq[YamlMd]]("Raw table metadata")
     val mojozTableMetadata = taskKey[TableMetadata[TableDef[ColumnDef[Type]]]]("Table metadata")
+    val mojozDbNames       = taskKey[Seq[String]]("Database names extracted from mojozTableMetadata, used by other tasks. May contain null for default database")
 
     val mojozTresqlTableMetadataFileName = settingKey[String]("File name for tresql table metadata for compiler, defaults to \"tresql-table-metadata.yaml\"")
     val mojozGenerateTresqlTableMetadata = taskKey[File]("Generates tresql table metadata for tresql compiler")
@@ -70,6 +71,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
         .getOrElse(TypeMetadata.customizedTypeDefs),
 
     mojozTableMetadata := new TableMetadata(new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs, mojozDbNaming.value),
+    mojozDbNames       := mojozTableMetadata.value.tableDefs.map(_.db).distinct.sortBy(Option(_) getOrElse ""),
 
     mojozTresqlTableMetadataFileName := ((Compile / resourceManaged).value / "tresql-table-metadata.yaml").getAbsolutePath,
     mojozGenerateTresqlTableMetadata := {

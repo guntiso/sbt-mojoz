@@ -2,3 +2,10 @@ table: foo
 columns:
 - id
 - name
+
+
+db: other_db
+table: foo
+columns:
+- id
+- full_name

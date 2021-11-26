@@ -36,8 +36,8 @@ object MojozPlugin extends AutoPlugin {
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
-    val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozFunctionSignaturesClass is customized")
-    val mojozFunctionSignaturesClass = settingKey[Class[_]]("Function signatures class for view compilation")
+    val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozDbToFunctionSignaturesClass is customized")
+    val mojozDbToFunctionSignaturesClass = taskKey[Map[String, Class[_]]] ("Map of database name to function signatures class for view compilation")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozTresqlMacros = settingKey[Option[Any]]("Object containing tresql compiler macro functions")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
@@ -88,7 +88,7 @@ object MojozPlugin extends AutoPlugin {
     mojozViewMetadataLoader := YamlViewDefLoader(
       mojozTableMetadata.value,
       mojozRawViewMetadata.value.toList,
-      TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozFunctionSignaturesClass.value),
+      TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozDbToFunctionSignaturesClass.value),
       mojozMdConventions.value,
       collection.immutable.Seq(),
       mojozTypeDefs.value),
@@ -97,7 +97,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
     mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
 
-    mojozFunctionSignaturesClass := classOf[org.tresql.compiling.TresqlFunctionSignatures],
+    mojozDbToFunctionSignaturesClass := mojozDbNames.value.map {_ -> classOf[org.tresql.compiling.TresqlFunctionSignatures]}.toMap,
     mojozTresqlMacros := Some(org.mojoz.querease.QuereaseMacros),
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
@@ -106,8 +106,8 @@ object MojozPlugin extends AutoPlugin {
         override lazy val typeDefs = mojozTypeDefs.value
         override lazy val tableMetadata = mojozTableMetadata.value
         override lazy val viewDefLoader = mojozViewMetadataLoader.value
-        override lazy val functionSignaturesClass: Class[_] = mojozFunctionSignaturesClass.value
-        override lazy val joinsParser = TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozFunctionSignaturesClass.value)
+        override lazy val dbToFunctionSignaturesClass: Map[String, Class[_]] = mojozDbToFunctionSignaturesClass.value
+        override lazy val joinsParser = TresqlJoinsParser(mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozDbToFunctionSignaturesClass.value)
       }
     },
     mojozAllCompilerMetadataFiles := {
@@ -138,9 +138,7 @@ object MojozPlugin extends AutoPlugin {
         log.info(s"Compiling ${viewsToCompile.size} top-level views (${xViewDefs.size} views total)")
         val compiler = new org.tresql.compiling.Compiler {
           override val macros = new MacroResourcesImpl(mojozTresqlMacros.value.orNull)
-          override val metadata = new TresqlMetadata(tableMd.tableDefs, qe.typeDefs) with CompilerFunctionMetadata {
-            override def compilerFunctionSignatures = qe.functionSignaturesClass
-          }
+          override val metadata = TresqlMetadata(tableMd.tableDefs, qe.typeDefs, qe.dbToFunctionSignaturesClass)
         }
         val viewNamesAndQueriesToCompile = viewsToCompile.flatMap { viewDef =>
           qe.allQueryStrings(viewDef).map(q => viewDef.name -> q)
@@ -204,10 +202,12 @@ object MojozPlugin extends AutoPlugin {
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosMappingsViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
-
+      val tableNames = tableMd.tableDefs.map(_.name)
+      // FIXME do not search for distinct table names, change mapping structure to support multi-db tables instead?
+      val distinctTableNames  = tableNames.distinct.sorted
       val mapping = s"""
         |object Tables {
-        |  ${tableMd.tableDefs.map(t => s"class ${classBuilder.scalaClassName(t.name)} {}").mkString("\n  ")}
+        |  ${distinctTableNames.map(t => s"class ${classBuilder.scalaClassName(t)} {}").mkString("\n  ")}
         |}
         |object DtoMapping {
         |  val viewNameToClass = Map[String, Class[_ <: Dto]](
