@@ -36,7 +36,8 @@ object MojozPlugin extends AutoPlugin {
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
-    val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojozDbToFunctionSignaturesClass is customized")
+    val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacros and / or mojoz[DbTo]FunctionSignaturesClass is customized")
+    val mojozFunctionSignaturesClass = settingKey[Class[_]]("Function signatures class for view compilation - if fits all databases")
     val mojozDbToFunctionSignaturesClass = taskKey[Map[String, Class[_]]] ("Map of database name to function signatures class for view compilation")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozTresqlMacros = settingKey[Option[Any]]("Object containing tresql compiler macro functions")
@@ -97,7 +98,8 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
     mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
 
-    mojozDbToFunctionSignaturesClass := mojozDbNames.value.map {_ -> classOf[org.tresql.compiling.TresqlFunctionSignatures]}.toMap,
+    mojozFunctionSignaturesClass := classOf[org.tresql.compiling.TresqlFunctionSignatures],
+    mojozDbToFunctionSignaturesClass := mojozDbNames.value.map {_ -> mojozFunctionSignaturesClass.value}.toMap,
     mojozTresqlMacros := Some(org.mojoz.querease.QuereaseMacros),
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
