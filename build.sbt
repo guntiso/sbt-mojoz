@@ -5,16 +5,16 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-mojoz",
     organization := "org.mojoz",
-    version := "3.0.0-SNAPSHOT",
+    version := "3.0.0",
     scalaVersion := "2.12.15",
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
     ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
-      "org.mojoz"                  %% "mojoz"                             % "4.0.0-SNAPSHOT",
-      "org.mojoz"                  %% "querease"                          % "6.0.0-SNAPSHOT",
-      "org.tresql"                 %% "tresql"                            % "11.0.0-SNAPSHOT",
+      "org.mojoz"                  %% "mojoz"                             % "4.0.0",
+      "org.mojoz"                  %% "querease"                          % "6.0.0",
+      "org.tresql"                 %% "tresql"                            % "11.0.0",
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
