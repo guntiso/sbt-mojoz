@@ -138,9 +138,11 @@ object MojozPlugin extends AutoPlugin {
           .filter(viewDef => !childViews.contains(viewDef.name)) // compile only top-level views
           .sortBy(_.name)
         log.info(s"Compiling ${viewsToCompile.size} top-level views (${xViewDefs.size} views total)")
+        val tresqlMetadata = TresqlMetadata(tableMd.tableDefs, qe.typeDefs, qe.dbToFunctionSignaturesClass)
         val compiler = new org.tresql.compiling.Compiler {
           override val macros = new MacroResourcesImpl(mojozTresqlMacros.value.orNull)
-          override val metadata = TresqlMetadata(tableMd.tableDefs, qe.typeDefs, qe.dbToFunctionSignaturesClass)
+          override val metadata = tresqlMetadata
+          override val extraMetadata = tresqlMetadata.extraDbToMetadata
         }
         val viewNamesAndQueriesToCompile = viewsToCompile.flatMap { viewDef =>
           qe.allQueryStrings(viewDef).map(q => viewDef.name -> q)
