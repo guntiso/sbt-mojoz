@@ -65,7 +65,7 @@ object MojozPlugin extends AutoPlugin {
     mojozViewMetadataFolders := Seq(baseDirectory.value / "views"),
     mojozViewMetadataFiles := mojozViewMetadataFolders.value.flatMap { mojozViewMetadataFolder =>
       Path.selectSubpaths(mojozViewMetadataFolder, _.isFile).map {
-        case (f, p) => (f, mojozViewMetadataFolder.getName + "/" + p)
+        case (f, p) => (f, mojozViewMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
     },
 

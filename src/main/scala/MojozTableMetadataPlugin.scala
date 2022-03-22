@@ -40,7 +40,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
 
     mojozTableMetadataFiles := mojozTableMetadataFolders.value.flatMap { mojozTableMetadataFolder =>
       Path.selectSubpaths(mojozTableMetadataFolder, _.isFile).map {
-        case (f, p) => (f, mojozTableMetadataFolder.getName + "/" + p)
+        case (f, p) => (f, mojozTableMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
     },
     mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
