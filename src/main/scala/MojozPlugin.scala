@@ -209,17 +209,18 @@ object MojozPlugin extends AutoPlugin {
       val tableNames = tableMd.tableDefs.map(_.name)
       // FIXME do not search for distinct table names, change mapping structure to support multi-db tables instead?
       val distinctTableNames  = tableNames.distinct.sorted
+      def scalaClassNameString(name: String) = classBuilder.scalaNameString(classBuilder.scalaClassName(name))
       val mapping = s"""
         |object Tables {
-        |  ${distinctTableNames.map(t => s"class ${classBuilder.scalaClassName(t)} {}").mkString("\n  ")}
+        |  ${distinctTableNames.map(t => s"class ${scalaClassNameString(t)} {}").mkString("\n  ")}
         |}
         |object DtoMapping {
         |  val viewNameToClass = Map[String, Class[_ <: Dto]](
-        |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${classBuilder.scalaClassName(v.name)}]""").mkString(",\n    ")}
+        |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${scalaClassNameString(v.name)}]""").mkString(",\n    ")}
         |  )
         |  val viewClassToTableClass = Map[Class[_ <: Dto], Class[_]](
         |    ${viewDefs.filter(_.table != null).map(v =>
-                s"classOf[${classBuilder.scalaClassName(v.name)}] -> classOf[Tables.${classBuilder.scalaClassName(v.table)}]"
+                s"classOf[${scalaClassNameString(v.name)}] -> classOf[Tables.${scalaClassNameString(v.table)}]"
                ).mkString(",\n    ")
              }
         |  )
@@ -261,11 +262,15 @@ object MojozPlugin extends AutoPlugin {
       val viewDefs = mojozGenerateDtosViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
       val packagePath = mojozDtosPackage.value.replaceAllLiterally(".", "/")
+      def classFileName(name: String) =
+        // TODO classFileNameFromName
+        classBuilder.scalaClassName(name)
+          .replace(".", "$u002E")
       def classFilePathFromName(name: String) = packagePath + "/" + name + ".class"
       Seq(mojozMdFilesFileName.value, mojozGenerateDtosScalaFileName.value) ++
         Seq("Tables$", "Tables", "DtoMapping$", "DtoMapping").map(classFilePathFromName) ++
-        viewDefs.map(v => classFilePathFromName(classBuilder.scalaClassName(v.name))) ++
-        tableMd.tableDefs.map(v => classFilePathFromName("Tables$" + classBuilder.scalaClassName(v.name)))
+        viewDefs.map(v => classFilePathFromName(classFileName(v.name))) ++
+        tableMd.tableDefs.map(t => classFilePathFromName("Tables$" + classFileName(t.name)))
     },
 
     // sbt tilde must watch changes in yaml files
