@@ -235,11 +235,19 @@ object MojozPlugin extends AutoPlugin {
       val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
+      val allViewDefsMap = mojozViewMetadata.value.map(v => v.name -> v).toMap
+
       val classBuilder = mojozScalaGenerator.value
 
       val mapping = mojozGenerateDtosMappingsScala.value
       val contents = classBuilder.generateScalaSource(
-        List("package "+mojozDtosPackage.value, "") ++ mojozDtosImports.value.map("import "+_) ++ List(""), viewDefs, List("", mapping))
+        List("package "+mojozDtosPackage.value, "") ++
+          mojozDtosImports.value.map("import "+_)   ++
+          List(""),
+        viewDefs,
+        List("", mapping),
+        allViewDefsMap,
+      )
       IO.write(file, contents)
       file
     },
