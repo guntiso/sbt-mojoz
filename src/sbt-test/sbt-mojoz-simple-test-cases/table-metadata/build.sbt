@@ -17,5 +17,5 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf
     ", tableMetadataFile=" + mojozGenerateTresqlTableMetadata.value.getCanonicalPath)
 
 libraryDependencies ++= Seq(
-  "org.mojoz"                  %% "querease"                          % "6.1.0",
+  "org.mojoz"                  %% "querease"                          % "6.1.1",
 )
