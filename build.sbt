@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-mojoz",
     organization := "org.mojoz",
-    scalaVersion := "2.12.16",
+    scalaVersion := "2.12.17",
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
     ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),

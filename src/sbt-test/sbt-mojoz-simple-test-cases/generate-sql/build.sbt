@@ -5,7 +5,7 @@ organization := "org.mojoz"
 
 version := "0.1"
 
-scalaVersion := "2.12.16"
+scalaVersion := "2.12.17"
 
 lazy val root = (project in file(".")).enablePlugins(MojozPlugin, MojozGenerateSchemaPlugin)
 
