@@ -9,6 +9,13 @@ lazy val root = (project in file("."))
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
     ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
+    initialize := {
+      val _ = initialize.value
+      val javaVersion = sys.props("java.specification.version")
+      if (javaVersion != "1.8")
+        sys.error("Java 1.8 is required for this project. Found " + javaVersion + " instead")
+    },
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
       "org.mojoz"                  %% "mojoz"                             % "2.0.0",
