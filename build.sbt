@@ -11,9 +11,9 @@ lazy val root = (project in file("."))
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
-      "org.mojoz"                  %% "mojoz"                             % "4.1.0",
-      "org.mojoz"                  %% "querease"                          % "6.1.3",
-      "org.tresql"                 %% "tresql"                            % "11.1.3",
+      "org.mojoz"                  %% "mojoz"                             % "4.2.0",
+      "org.mojoz"                  %% "querease"                          % "6.2.0",
+      "org.tresql"                 %% "tresql"                            % "11.2.1",
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
