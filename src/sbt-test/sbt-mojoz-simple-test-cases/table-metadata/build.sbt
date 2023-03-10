@@ -12,10 +12,13 @@ lazy val root = (project in file(".")).enablePlugins(MojozTableMetadataPlugin)
 
 mojozMdConventions := org.mojoz.metadata.io.MdConventions
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8",
-  "-Xmacro-settings:metadataFactoryClass=org.mojoz.querease.TresqlMetadataFactory" +
-    ", tableMetadataFile=" + mojozGenerateTresqlTableMetadata.value.getCanonicalPath)
+scalacOptions := Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8")
+
+Compile / compile := {
+  (Compile / copyResources).value // expose tresql-scala-macro.properties
+  (Compile / compile).value
+}
 
 libraryDependencies ++= Seq(
-  "org.mojoz"                  %% "querease"                          % "6.2.0",
+  "org.mojoz"                  %% "querease"                          % "7.0.0-SNAPSHOT",
 )

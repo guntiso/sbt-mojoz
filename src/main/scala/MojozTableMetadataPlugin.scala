@@ -22,7 +22,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     val mojozTableMetadataFolders = settingKey[Seq[File]]("Mojoz table metadata folders")
     val mojozTableMetadataFiles = taskKey[Seq[(File, String)]]("All table metadata files + relative paths they are kept in")
     val mojozRawTableMetadata = taskKey[Seq[YamlMd]]("Raw table metadata")
-    val mojozTableMetadata = taskKey[TableMetadata[TableDef[ColumnDef[Type]]]]("Table metadata")
+    val mojozTableMetadata = taskKey[TableMetadata]("Table metadata")
     val mojozDbNames       = taskKey[Seq[String]]("Database names extracted from mojozTableMetadata, used by other tasks. May contain null for default database")
 
     val mojozTresqlTableMetadataFileName = settingKey[String]("File name for tresql table metadata for compiler, defaults to \"tresql-table-metadata.yaml\"")

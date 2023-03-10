@@ -15,4 +15,4 @@ mojozDtosImports := Seq("sbtmojoz.test._")
 
 mojozSchemaSqlFiles := Seq(file("db/creation/schema.sql"))
 
-mojozSchemaSqlGenerators := Seq(org.mojoz.metadata.out.SqlGenerator.postgresql(typeDefs = mojozTypeDefs.value))
+mojozSchemaSqlGenerators := Seq(org.mojoz.metadata.out.DdlGenerator.postgresql(typeDefs = mojozTypeDefs.value))

@@ -18,9 +18,12 @@ lazy val root = (project in file("."))
     },
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
-      "org.mojoz"                  %% "mojoz"                             % "4.2.0",
-      "org.mojoz"                  %% "querease"                          % "6.2.0",
-      "org.tresql"                 %% "tresql"                            % "11.2.1",
+      "org.mojoz"               %% "mojoz"                      % "5.0.0-SNAPSHOT",
+      "org.mojoz"               %% "querease"                   % "7.0.0-SNAPSHOT"  exclude(
+      "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
+      "org.tresql"              %% "tresql"                     % "12.0.0-SNAPSHOT" exclude(
+      "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
+      "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.2.0" % "provided",
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)

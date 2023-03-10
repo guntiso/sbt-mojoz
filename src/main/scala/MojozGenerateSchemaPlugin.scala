@@ -1,6 +1,6 @@
 package org.mojoz
 
-import org.mojoz.metadata.out.SqlGenerator
+import org.mojoz.metadata.out.DdlGenerator
 import sbt.Keys._
 import sbt._
 import sbt.plugins.JvmPlugin
@@ -11,7 +11,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
     val mojozSchemaSqlDirectory     = settingKey[File]          ("Directory for generated schema files, can be used by mojozSchemaSqlFiles")
     val mojozSchemaSqlDbNames       = taskKey[Seq[String]]      ("Database names for schema generation, may contain null for default database")
     val mojozSchemaSqlFiles         = taskKey[Seq[File]]        ("Files where to write schema sql, corresponding to mojozSchemaSqlDbNames")
-    val mojozSchemaSqlGenerators    = taskKey[Seq[SqlGenerator]]("SqlGenerators (per db) used to generate schema, see org.mojoz.metadata.out.SqlGenerator for available generators")
+    val mojozSchemaSqlGenerators    = taskKey[Seq[DdlGenerator]]("SqlGenerators (per db) used to generate schema, see org.mojoz.metadata.out.DdlGenerator for available generators")
     val mojozGenerateSchemaSqlFiles = taskKey[Seq[File]]        ("Generates schema sql")
     val mojozPrintSchemaSql         = inputKey[Unit]            ("Prints schema sql string for (space-delimited) table name(s)")
 
@@ -39,7 +39,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
     },
     mojozSchemaSqlGenerators := {
       val typeDefs = mojozTypeDefs.value
-      mojozSchemaSqlDbNames.value.map { db => org.mojoz.metadata.out.SqlGenerator.postgresql(typeDefs = typeDefs) }
+      mojozSchemaSqlDbNames.value.map { db => org.mojoz.metadata.out.DdlGenerator.postgresql(typeDefs = typeDefs) }
     },
 
     mojozGenerateSchemaSqlFiles := {
@@ -56,7 +56,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
     mojozPrintSchemaSql := {
       import sbt.complete.DefaultParsers._
-      import org.mojoz.metadata.out.SqlGenerator
+      import org.mojoz.metadata.out.DdlGenerator
       // get the result of parsing
       val args: Seq[String] = spaceDelimited("<arg>").parsed
       val tableMd           = mojozTableMetadata.value

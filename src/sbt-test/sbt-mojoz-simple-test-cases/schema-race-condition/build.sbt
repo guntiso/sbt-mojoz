@@ -9,7 +9,7 @@ lazy val commonSettings = Seq(
 
 lazy val commonSchemaSettings = Seq(
   mojozSchemaSqlFiles := Seq(file("db/schema.sql")),
-  mojozSchemaSqlGenerators := Seq(org.mojoz.metadata.out.SqlGenerator.postgresql(typeDefs = mojozTypeDefs.value))
+  mojozSchemaSqlGenerators := Seq(org.mojoz.metadata.out.DdlGenerator.postgresql(typeDefs = mojozTypeDefs.value))
 )
 
 
