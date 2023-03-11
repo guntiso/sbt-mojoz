@@ -13,5 +13,11 @@ api: sistema_lietot list
 fields:
 - id
 - name
+- a = my_custom_macro(id, id)                          # macro from this project
+- b = if_not(true, false)                              # macro from querease
+- c = if_defined_or_else(:v?, 'd', 'e')                # macro from tresql
+- x = my_custom_db_function(name, id)                  # signature from this project
+- y = checked_resolve('foo-name', (foo {name}), 'wt?') # signature from querease
+- z = upper(name)                                      # signature from tresql
 order:
 - id

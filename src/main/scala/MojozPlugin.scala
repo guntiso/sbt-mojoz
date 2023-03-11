@@ -37,7 +37,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
     val mojozJoinsParser = taskKey[JoinsParser]("Joins parser")
-    val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to None, because rarely needed - use textual macros instead")
+    val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.tresql.Macros. Customization rarely needed - use tresql-macros.txt instead")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
     val mojozGenerateDtosViewMetadata = taskKey[List[ViewDef]]("View metadata for dtos generation")
@@ -99,7 +99,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
     mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
 
-    mojozTresqlMacrosClass := None,
+    mojozTresqlMacrosClass := Some(classOf[org.tresql.Macros]),
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
     mojozQuerease := {
@@ -115,8 +115,9 @@ object MojozPlugin extends AutoPlugin {
         (mojozMdConventionsResources.value ** "*-patterns.txt").get,
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
-        // TODO include macros files in mojozAllSourceFiles,
-        // TODO include function signatures files in mojozAllSourceFiles,
+        ((Compile / unmanagedResources).value ** "tresql-function-signatures*.txt").get,
+        ((Compile / unmanagedResources).value ** "tresql-macros.txt").get,
+        ((Compile / unmanagedResources).value ** "tresql-scala-macro.properties").get,
       ).flatMap(x => x)
     },
     mojozAllSourceFiles :=
@@ -136,7 +137,11 @@ object MojozPlugin extends AutoPlugin {
           .filter(viewDef => !childViews.contains(viewDef.name)) // compile only top-level views
           .sortBy(_.name)
         log.info(s"Compiling ${viewsToCompile.size} top-level views (${xViewDefs.size} views total)")
-        val tresqlMetadata = TresqlMetadata(tableMd.tableDefs, qe.typeDefs, mojozTresqlMacrosClass.value.orNull)
+        def resourceLoader(r: String) =
+          (Compile / unmanagedResources).value.find(_.getAbsolutePath endsWith r)
+            .map(new java.io.FileInputStream(_)).getOrElse(getClass.getResourceAsStream(r))
+        val tresqlMetadata =
+          TresqlMetadata(tableMd.tableDefs, qe.typeDefs, mojozTresqlMacrosClass.value.orNull, resourceLoader)
         val compiler = new org.tresql.compiling.Compiler {
           override val metadata = tresqlMetadata
           override val extraMetadata = tresqlMetadata.extraDbToMetadata
