@@ -1,0 +1,6 @@
+# build project
+> clean
+$ absent target/scala-2.12/resource_managed/main/cache/my-qe-cache.txt
+
+> compile
+$ exists target/scala-2.12/resource_managed/main/cache/my-qe-cache.txt

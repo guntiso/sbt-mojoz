@@ -1,0 +1,5 @@
+name:    foo
+table:   foo
+fields:
+- id
+- name
