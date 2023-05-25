@@ -91,7 +91,10 @@ object MojozPlugin extends AutoPlugin {
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
     mojozJoinsParser := TresqlJoinsParser(
-      mojozTableMetadata.value.tableDefs, mojozTypeDefs.value, mojozTresqlMacrosClass.value.orNull),
+      mojozTableMetadata.value.tableDefs,
+      mojozTypeDefs.value,
+      mojozTresqlMacrosClass.value.orNull,
+      resourceLoader = mojozResourceLoader.value),
 
     mojozViewMetadataLoader := YamlViewDefLoader(
       mojozTableMetadata.value,
