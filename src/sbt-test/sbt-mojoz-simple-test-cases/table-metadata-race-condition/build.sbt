@@ -2,7 +2,7 @@
 lazy val commonSettings = Seq(
   organization := "org.mojoz",
   version := "0.1",
-  scalaVersion := "2.12.17",
+  scalaVersion := "2.12.18",
   mojozMdConventions := org.mojoz.metadata.io.MdConventions,
   mojozDtosImports := Seq("sbtmojoz.test._"),
   mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
