@@ -35,6 +35,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozShouldCompileViews = settingKey[Boolean]("Should views be compiled, defaults to true")
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
     val mojozCompileViews = taskKey[Unit]("View compilation task")
+    val mojozCompilerCacheFolder = settingKey[File]("Mojoz view compiler cache folder")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
     val mojozJoinsParser = taskKey[JoinsParser]("Joins parser")
@@ -94,6 +95,7 @@ object MojozPlugin extends AutoPlugin {
       mojozTableMetadata.value.tableDefs,
       mojozTypeDefs.value,
       mojozTresqlMacrosClass.value.orNull,
+      // TODO load cache?
       resourceLoader = mojozResourceLoader.value),
 
     mojozViewMetadataLoader := YamlViewDefLoader(
@@ -144,6 +146,8 @@ object MojozPlugin extends AutoPlugin {
     mojozAllSourceFiles :=
       mojozAllCompilerMetadataFiles.value ++
       mojozViewMetadataFiles.value.map(_._1),
+    mojozCompilerCacheFolder :=
+      (Compile / resourceManaged).value,
     mojozCompileViews := {
       def compileViews(previouslyCompiledQueries: Set[String]): Set[String] = {
         val (compiledViews, caches) =
@@ -153,7 +157,7 @@ object MojozPlugin extends AutoPlugin {
             streams.value.log.info(_),
           )
         caches foreach { case (name, cache) =>
-          val file = (Compile / resourceManaged).value / "cache" / name
+          val file = mojozCompilerCacheFolder.value / name
           IO.write(file, cache)
         }
         compiledViews
