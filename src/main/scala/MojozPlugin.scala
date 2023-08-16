@@ -34,8 +34,10 @@ object MojozPlugin extends AutoPlugin {
     val mojozViewMetadata = taskKey[List[ViewDef]]("View metadata")
     val mojozShouldCompileViews = settingKey[Boolean]("Should views be compiled, defaults to true")
     val mojozShowFailedViewQuery = settingKey[Boolean]("Show query string if view fails to compile, defaults to false")
-    val mojozCompileViews = taskKey[Unit]("View compilation task")
+    val mojozCompileViews = taskKey[Seq[File]]("View compilation task. Returns view compiler cache files")
     val mojozCompilerCacheFolder = settingKey[File]("Mojoz view compiler cache folder")
+    val mojozResourceGenerators = taskKey[Seq[File]]("All mojoz resource generation tasks")
+    val mojozSourceGenerators = taskKey[Seq[File]]("All mojoz source generation tasks")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
     val mojozJoinsParser = taskKey[JoinsParser]("Joins parser")
@@ -87,7 +89,9 @@ object MojozPlugin extends AutoPlugin {
       } else Seq()
     },
 
-    Compile / resourceGenerators += mojozGenerateMdFileList.taskValue,
+    mojozResourceGenerators :=
+      mojozCompileViews.value ++
+      mojozGenerateMdFileList.value,
 
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
@@ -149,6 +153,7 @@ object MojozPlugin extends AutoPlugin {
     mojozCompilerCacheFolder :=
       (Compile / resourceManaged).value,
     mojozCompileViews := {
+      var compilerCacheFiles: Seq[File] = Nil
       def compileViews(previouslyCompiledQueries: Set[String]): Set[String] = {
         val (compiledViews, caches) =
           mojozQuerease.value.compileAllQueries(
@@ -156,10 +161,12 @@ object MojozPlugin extends AutoPlugin {
             mojozShowFailedViewQuery.value,
             streams.value.log.info(_),
           )
-        caches foreach { case (name, cache) =>
-          val file = mojozCompilerCacheFolder.value / name
-          IO.write(file, cache)
-        }
+        compilerCacheFiles =
+          caches.map { case (name, cache) =>
+            val file = mojozCompilerCacheFolder.value / name
+            IO.write(file, cache)
+            file
+          }.toSeq
         compiledViews
       }
       import sbt.util.CacheImplicits._
@@ -191,6 +198,7 @@ object MojozPlugin extends AutoPlugin {
       }
       if (mojozShouldCompileViews.value)
         cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
+      compilerCacheFiles
     },
 
     mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value),
@@ -224,8 +232,6 @@ object MojozPlugin extends AutoPlugin {
     },
 
     mojozGenerateDtosScala := {
-      val compiled = mojozCompileViews.value
-
       val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
@@ -246,7 +252,14 @@ object MojozPlugin extends AutoPlugin {
       file
     },
 
-    Compile / sourceGenerators += mojozGenerateDtosScala.map(Seq(_)).taskValue,
+    mojozSourceGenerators := {
+      mojozCompileViews.value.filter(_ => false) ++ // XXX Compile views at this point (no source generation here)
+      Seq(mojozGenerateDtosScala.value)
+    },
+
+    Compile / resourceGenerators += mojozResourceGenerators.taskValue,
+
+    Compile / sourceGenerators   += mojozSourceGenerators.taskValue,
 
     Compile / copyResources := {
       val taskStreams = streams.value
@@ -269,11 +282,11 @@ object MojozPlugin extends AutoPlugin {
         classBuilder.scalaClassName(name)
           .replace(".", "$u002E")
       def classFilePathFromName(name: String) = packagePath + "/" + name + ".class"
-      Seq(mojozMdFilesFileName.value, mojozGenerateDtosScalaFileName.value) ++
+      mojozResourceGenerators.value.map(_.getAbsolutePath) ++
+        mojozSourceGenerators.value.map(_.getAbsolutePath) ++
         Seq("Tables$", "Tables", "DtoMapping$", "DtoMapping").map(classFilePathFromName) ++
         viewDefs.map(v => classFilePathFromName(classFileName(v.name))) ++
         tableMd.tableDefs.map(t => classFilePathFromName("Tables$" + classFileName(t.name)))
-        // ++ mojozCaches.value.map(_._1) // TODO
     },
 
     // sbt tilde must watch changes in yaml files
