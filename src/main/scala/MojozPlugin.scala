@@ -2,7 +2,7 @@ package org.mojoz
 
 import org.mojoz.metadata.ViewDef
 import org.mojoz.metadata.in.{JoinsParser, YamlMd, YamlViewDefLoader}
-import org.tresql.MacroResourcesImpl
+import org.tresql.{Cache, MacroResourcesImpl, SimpleCache}
 import org.mojoz.querease.{Querease, TresqlJoinsParser, TresqlMetadata}
 import sbt.{AutoPlugin, Compile, File, HashFileInfo, IO, NothingFilter, Path}
 import sbt.{settingKey, SimpleFilter, Sync, taskKey, Tracked, WatchSource}
@@ -41,6 +41,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
     val mojozJoinsParser = taskKey[JoinsParser]("Joins parser")
+    val mojozJoinsParserCacheFactory = taskKey[String => Option[Cache]]("Joins parser cache factory")
     val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.tresql.Macros. Customization rarely needed - use tresql-macros.txt instead")
     val mojozQuerease = taskKey[Querease]("Creates an instance of Querease for view compilation etc.")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
@@ -100,8 +101,10 @@ object MojozPlugin extends AutoPlugin {
       mojozTableMetadata.value.tableDefs,
       mojozTypeDefs.value,
       mojozTresqlMacrosClass.value.orNull,
-      // TODO load cache?
+      mojozJoinsParserCacheFactory.value,
       resourceLoader = mojozResourceLoader.value),
+
+    mojozJoinsParserCacheFactory := { _: String => Some(new SimpleCache(4096)) },
 
     mojozViewMetadataLoader := YamlViewDefLoader(
       mojozTableMetadata.value,
