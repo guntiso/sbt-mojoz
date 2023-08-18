@@ -52,6 +52,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozResourceLoader = taskKey[String => InputStream]("Resource loader for view compilation")
     val mojozScalaGenerator = taskKey[org.mojoz.metadata.out.ScalaGenerator]("Creates scala (i.e. Dtos) generator")
     val mojozTresqlMetadata = taskKey[TresqlMetadata]("Tresql metadata for view compilation")
+    val mojozUninheritableExtras = settingKey[collection.immutable.Seq[String]]("View extensions not to be inherited")
   }
 
   import autoImport._
@@ -107,7 +108,7 @@ object MojozPlugin extends AutoPlugin {
       mojozRawViewMetadata.value.toList,
       mojozJoinsParser.value,
       mojozMdConventions.value,
-      collection.immutable.Seq(),
+      mojozUninheritableExtras.value,
       mojozTypeDefs.value),
 
     mojozViewMetadata := mojozViewMetadataLoader.value.plainViewDefs,
@@ -256,6 +257,8 @@ object MojozPlugin extends AutoPlugin {
       mojozCompileViews.value.filter(_ => false) ++ // XXX Compile views at this point (no source generation here)
       Seq(mojozGenerateDtosScala.value)
     },
+
+    mojozUninheritableExtras := collection.immutable.Seq("api"),
 
     Compile / resourceGenerators += mojozResourceGenerators.taskValue,
 
