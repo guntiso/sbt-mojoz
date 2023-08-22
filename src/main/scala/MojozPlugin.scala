@@ -158,7 +158,7 @@ object MojozPlugin extends AutoPlugin {
       (Compile / resourceManaged).value,
     mojozCompileViews := {
       var compilerCacheFiles: Seq[File] = Nil
-      def compileViews(previouslyCompiledQueries: Set[String]): Set[String] = {
+      def compileViews(previouslyCompiledQueries: Set[String] = Set.empty): Set[String] = {
         val (compiledViews, caches) =
           mojozQuerease.value.compileAllQueries(
             previouslyCompiledQueries,
@@ -174,34 +174,30 @@ object MojozPlugin extends AutoPlugin {
         compiledViews
       }
       import sbt.util.CacheImplicits._
-      import scala.language.existentials
-      val allSourcesCacheStore       = streams.value.cacheStoreFactory make "mojoz-all-source-file-hashes"
-      val compilerMetadataCacheStore = streams.value.cacheStoreFactory make "mojoz-compiler-metadata-file-hashes"
-      val compiledQueriesCacheStore  = streams.value.cacheStoreFactory make "mojoz-compiled-queries"
       val allSourceFiles = mojozAllSourceFiles.value
       val compilerMetadataFiles = mojozAllCompilerMetadataFiles.value
-      val cachedCompileViews = Tracked.inputChanged[Seq[HashFileInfo], String](allSourcesCacheStore) {
-        case (isChanged: Boolean, _) =>
-          if (isChanged) {
-            val cachedCompileViewsM = Tracked.inputChanged[Seq[HashFileInfo], String](compilerMetadataCacheStore) {
-              case (isCompilerChanged: Boolean, _) =>
-                val cachedCompileViewsQ = Tracked.lastOutput[Boolean, Set[String]](compiledQueriesCacheStore) {
-                  case (isCompilerChanged, None) =>
-                    compileViews(Set.empty)
-                  case (isCompilerChanged, Some(previouslyCompiledQueries)) =>
-                    if (isCompilerChanged)
-                      compileViews(Set.empty)
-                    else
-                      compileViews(previouslyCompiledQueries)
-                }
-                cachedCompileViewsQ(isCompilerChanged)
-                "changed"
-            }
-            cachedCompileViewsM(compilerMetadataFiles.map(FileInfo.hash(_)))
-          } else "not changed"
+
+      lazy val compiledQueriesCacheStore  = streams.value.cacheStoreFactory make "mojoz-compiled-queries"
+      lazy val cachedCompileViewsQ        = Tracked.lastOutput[Boolean, Set[String]](compiledQueriesCacheStore) {
+        case (_, None) /* no previous output */        => compileViews()
+        case (true, _) /* compiler metadata changed */ => compileViews()
+        case (_, Some(previouslyCompiledQueries))      => compileViews(previouslyCompiledQueries)
       }
+
+      lazy val compilerMetadataCacheStore = streams.value.cacheStoreFactory make "mojoz-compiler-metadata-file-hashes"
+      lazy val cachedCompileViewsM        = Tracked.inputChanged[Seq[HashFileInfo], Any](compilerMetadataCacheStore) {
+        case (isCompilerMetadataChanged: Boolean, _)   => cachedCompileViewsQ(isCompilerMetadataChanged)
+      }
+
+      lazy val allSourcesCacheStore       = streams.value.cacheStoreFactory make "mojoz-all-source-file-hashes"
+      lazy val cachedCompileViews         = Tracked.inputChanged[Seq[HashFileInfo], Any](allSourcesCacheStore) {
+        case (true, _)  => cachedCompileViewsM(compilerMetadataFiles.map(FileInfo.hash(_)))
+        case (false, _) =>
+      }
+
       if (mojozShouldCompileViews.value)
         cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
+
       compilerCacheFiles
     },
 
