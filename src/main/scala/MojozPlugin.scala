@@ -157,7 +157,7 @@ object MojozPlugin extends AutoPlugin {
     mojozCompilerCacheFolder :=
       (Compile / resourceManaged).value,
     mojozCompileViews := {
-      var compilerCacheFiles: Seq[File] = Nil
+      var compilerCacheFileNames: Seq[String] = Nil
       def compileViews(previouslyCompiledQueries: Set[String] = Set.empty): Set[String] = {
         val (compiledViews, caches) =
           mojozQuerease.value.compileAllQueries(
@@ -165,11 +165,11 @@ object MojozPlugin extends AutoPlugin {
             mojozShowFailedViewQuery.value,
             streams.value.log.info(_),
           )
-        compilerCacheFiles =
+        compilerCacheFileNames =
           caches.map { case (name, cache) =>
             val file = mojozCompilerCacheFolder.value / name
             IO.write(file, cache)
-            file
+            name
           }.toSeq
         compiledViews
       }
@@ -198,7 +198,15 @@ object MojozPlugin extends AutoPlugin {
       if (mojozShouldCompileViews.value)
         cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
 
-      compilerCacheFiles
+      lazy val cacheFilenamesCacheStore   = streams.value.cacheStoreFactory make "mojoz-compiler-cache-file-names"
+      lazy val cachedCacheFileNames       = Tracked.lastOutput[Set[String], Set[String]](compiledQueriesCacheStore) {
+        case (fileNames, previousFileNamesOpt) => fileNames ++ previousFileNamesOpt.getOrElse(Set.empty)
+      }
+
+      cachedCacheFileNames(compilerCacheFileNames.toSet)
+        .toSeq.sorted
+        .map(mojozCompilerCacheFolder.value / _)
+        .filter(_.exists)
     },
 
     mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value),
