@@ -123,7 +123,10 @@ object MojozPlugin extends AutoPlugin {
     mojozShowFailedViewQuery := false,
     mojozResourceLoader := {
       (r: String) =>
-        (Compile / unmanagedResources).value.find(_.getAbsolutePath endsWith r)
+        ((Compile / unmanagedResources).value ++
+         (mojozCompilerCacheFolder.value ** "*").get
+        )
+          .find(_.getAbsolutePath endsWith r)
           .map(new java.io.FileInputStream(_)).getOrElse(getClass.getResourceAsStream(r))
     },
     mojozTresqlMetadata :=
