@@ -97,12 +97,10 @@ object MojozPlugin extends AutoPlugin {
 
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
-    mojozJoinsParser := TresqlJoinsParser(
-      mojozTableMetadata.value.tableDefs,
-      mojozTypeDefs.value,
-      mojozTresqlMacrosClass.value.orNull,
+    mojozJoinsParser := new TresqlJoinsParser(
+      mojozTresqlMetadata.value,
       mojozJoinsParserCacheFactory.value,
-      resourceLoader = mojozResourceLoader.value),
+    ),
 
     mojozJoinsParserCacheFactory := { _: String => Some(new SimpleCache(4096)) },
 
@@ -138,11 +136,14 @@ object MojozPlugin extends AutoPlugin {
       ),
     mojozQuerease :=
       new Querease {
-        override lazy val typeDefs = mojozTypeDefs.value
-        override lazy val tableMetadata = mojozTableMetadata.value
-        override lazy val viewDefLoader = mojozViewMetadataLoader.value
-        override lazy val joinsParser   = mojozJoinsParser.value
-        override lazy val tresqlMetadata = mojozTresqlMetadata.value
+        override lazy val yamlMetadata        = mojozRawViewMetadata.value.toVector
+        override lazy val metadataConventions = mojozMdConventions.value
+        override lazy val typeDefs            = mojozTypeDefs.value
+        override lazy val tableMetadata       = mojozTableMetadata.value
+        override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
+        override lazy val tresqlMetadata      = mojozTresqlMetadata.value
+        override lazy val joinsParser         = mojozJoinsParser.value
+        override lazy val viewDefLoader       = mojozViewMetadataLoader.value
       },
     mojozAllCompilerMetadataFiles := {
       Seq(
