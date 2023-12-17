@@ -19,8 +19,10 @@ object MojozPlugin extends AutoPlugin {
     val mojozDtosPackage = settingKey[String]("Package where all dtos should be placed in")
     val mojozDtosImports = settingKey[Seq[String]]("List of imports for Dtos.scala")
 
-    val mojozViewMetadataFolders = settingKey[Seq[File]]("Mojoz view metadata folders")
+    val mojozJobMetadataFolders = settingKey[Seq[File]]("Job metadata folders for wabase projects")
+    val mojozJobMetadataFiles = taskKey[Seq[(File, String)]]("All job metadata files + relative paths they are kept in")
 
+    val mojozViewMetadataFolders = settingKey[Seq[File]]("Mojoz view metadata folders")
     val mojozViewMetadataFiles = taskKey[Seq[(File, String)]]("All view metadata files + relative paths they are kept in")
 
     val mojozMetadataFilesForResources = taskKey[Seq[(File, String)]]("All metadata files to be copied to resources and included in -md-files.txt")
@@ -28,7 +30,9 @@ object MojozPlugin extends AutoPlugin {
     val mojozShouldGenerateMdFileList = settingKey[Boolean]("Should -md-files.txt be generated, defaults to true")
     val mojozGenerateMdFileList = taskKey[Seq[File]]("Generates -md-files.txt")
 
+    val mojozRawJobMetadata  = taskKey[Seq[YamlMd]]("Raw job metadata")
     val mojozRawViewMetadata = taskKey[Seq[YamlMd]]("Raw view metadata")
+    val mojozRawYamlMetadata = taskKey[Seq[YamlMd]]("Raw yaml metadata - job metadata and view metadata")
 
     val mojozViewMetadataLoader = taskKey[YamlViewDefLoader]("View metadata loader")
     val mojozViewMetadata = taskKey[List[ViewDef]]("View metadata")
@@ -71,6 +75,13 @@ object MojozPlugin extends AutoPlugin {
       "org.tresql._",
     ),
 
+    mojozJobMetadataFolders := Seq(baseDirectory.value / "jobs"),
+    mojozJobMetadataFiles := mojozJobMetadataFolders.value.flatMap { mojozJobMetadataFolder =>
+      Path.selectSubpaths(mojozJobMetadataFolder, _.isFile).map {
+        case (f, p) => (f, mojozJobMetadataFolder.getName + "/" + p.replace('\\', '/'))
+      }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
+    },
+
     mojozViewMetadataFolders := Seq(baseDirectory.value / "views"),
     mojozViewMetadataFiles := mojozViewMetadataFolders.value.flatMap { mojozViewMetadataFolder =>
       Path.selectSubpaths(mojozViewMetadataFolder, _.isFile).map {
@@ -78,7 +89,11 @@ object MojozPlugin extends AutoPlugin {
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
     },
 
-    mojozMetadataFilesForResources := mojozTableMetadataFiles.value ++ mojozViewMetadataFiles.value,
+    mojozMetadataFilesForResources :=
+      mojozJobMetadataFiles.value   ++
+      mojozTableMetadataFiles.value ++
+      mojozViewMetadataFiles.value,
+
     mojozMdFilesFileName := ((Compile / resourceManaged).value / "-md-files.txt").getAbsolutePath,
 
     mojozShouldGenerateMdFileList := true,
@@ -95,7 +110,11 @@ object MojozPlugin extends AutoPlugin {
       mojozCompileViews.value ++
       mojozGenerateMdFileList.value,
 
+    mojozRawJobMetadata := mojozJobMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+
+    mojozRawYamlMetadata := mojozRawJobMetadata.value ++ mojozRawViewMetadata.value,
 
     mojozJoinsParser := new TresqlJoinsParser(
       mojozTresqlMetadata.value,
@@ -136,7 +155,7 @@ object MojozPlugin extends AutoPlugin {
       ),
     mojozQuerease :=
       new Querease {
-        override lazy val yamlMetadata        = mojozRawViewMetadata.value.toVector
+        override lazy val yamlMetadata        = mojozRawYamlMetadata.value.toVector
         override lazy val metadataConventions = mojozMdConventions.value
         override lazy val typeDefs            = mojozTypeDefs.value
         override lazy val tableMetadata       = mojozTableMetadata.value
@@ -157,6 +176,7 @@ object MojozPlugin extends AutoPlugin {
     },
     mojozAllSourceFiles :=
       mojozAllCompilerMetadataFiles.value ++
+      mojozJobMetadataFiles.value.map(_._1) ++
       mojozViewMetadataFiles.value.map(_._1),
     mojozCompilerCacheFolder :=
       (Compile / resourceManaged).value,
@@ -306,6 +326,7 @@ object MojozPlugin extends AutoPlugin {
     // sbt tilde must watch changes in yaml files
     watchSources := {
       watchSources.value ++
+      mojozJobMetadataFolders.value.map(WatchSource(_)) ++
       mojozTableMetadataFolders.value.map(WatchSource(_)) ++
       mojozViewMetadataFolders.value.map(WatchSource(_)) ++
       mojozAllSourceFiles.value.groupBy(_.getParentFile.getAbsolutePath).map {
