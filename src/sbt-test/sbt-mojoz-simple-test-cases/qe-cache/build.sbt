@@ -16,11 +16,13 @@ mojozSchemaSqlDirectory := file("db/creation")
 
 mojozQuerease :=
   new org.mojoz.querease.Querease {
-    override lazy val typeDefs = mojozTypeDefs.value
-    override lazy val tableMetadata = mojozTableMetadata.value
-    override lazy val viewDefLoader = mojozViewMetadataLoader.value
-    override lazy val joinsParser   = mojozJoinsParser.value
-    override lazy val tresqlMetadata = mojozTresqlMetadata.value
+    override lazy val yamlMetadata        = mojozRawYamlMetadata.value
+    override lazy val metadataConventions = mojozMdConventions.value
+    override lazy val typeDefs            = mojozTypeDefs.value
+    override lazy val tableMetadata       = mojozTableMetadata.value
+    override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
+    override lazy val resourceLoader      = mojozResourceLoader.value
+    override lazy val uninheritableExtras = mojozUninheritableExtras.value
     override def compileAllQueries(
       previouslyCompiledQueries: Set[String],
       showFailedViewQuery: Boolean,
