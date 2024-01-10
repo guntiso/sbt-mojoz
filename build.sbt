@@ -21,9 +21,9 @@ lazy val root = (project in file("."))
       "org.mojoz"               %% "mojoz"                      % "5.1.0",
       "org.mojoz"               %% "querease"                   % "7.0.0-RC1-SNAPSHOT"  exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-      "org.tresql"              %% "tresql"                     % "12.0.0-SNAPSHOT" exclude(
+      "org.tresql"              %% "tresql"                     % "12.0.0-RC1-SNAPSHOT" exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-      "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.2.0" % "provided",
+      "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.3.0" % "provided",
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
