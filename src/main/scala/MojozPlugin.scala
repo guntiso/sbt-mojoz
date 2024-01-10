@@ -2,7 +2,7 @@ package org.mojoz
 
 import org.mojoz.metadata.ViewDef
 import org.mojoz.metadata.in.{JoinsParser, YamlMd, YamlViewDefLoader}
-import org.tresql.{Cache, MacroResourcesImpl, SimpleCache}
+import org.tresql.{Cache, MacroResourcesImpl}
 import org.mojoz.querease.{Querease, TresqlJoinsParser, TresqlMetadata}
 import sbt.{AutoPlugin, Compile, File, HashFileInfo, IO, NothingFilter, Path}
 import sbt.{settingKey, SimpleFilter, Sync, taskKey, Tracked, WatchSource}
