@@ -11,7 +11,6 @@ import sbt.plugins.JvmPlugin
 
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
-    val mojozMdConventionsResources = taskKey[Seq[File]]("Resources for mojoz simple pattern metadata conventions")
     val mojozMdConventions = taskKey[MdConventions]("Mojoz metadata conventions")
     val mojozMetadataFileFilterPredicate = settingKey[File => Boolean]("Predicate to filter files in metadata folders")
     val mojozDbNaming = settingKey[String => String]("Db naming rules. Transformation function from metadata name to database name")
@@ -45,19 +44,14 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     },
     mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
-    mojozMdConventionsResources := (Compile / unmanagedResources).value,
     mojozMdConventions := {
-      val resources = mojozMdConventionsResources.value
       import MdConventions._
-      def patterns(source: PatternSource) =
-        namePatternsFromFile(resources.filter { f =>
-          f.getAbsolutePath.endsWith(source.filename) ||
-            f.getAbsolutePath.endsWith(source.filename.replace('/', '\\'))
-        }.headOption, source.defaultPatterns)
+      val resourceLoader = MojozPlugin.autoImport.mojozResourceLoader.value
       new SimplePatternMdConventions(
-        booleanNamePatternStrings  = patterns(defaultBooleanNamePatternSource),
-        dateNamePatternStrings     = patterns(defaultDateNamePatternSource),
-        dateTimeNamePatternStrings = patterns(defaultDateTimeNamePatternSource))
+        booleanNamePatternStrings  = namePatternsFromResource(defaultBooleanNamePatternSource,  resourceLoader),
+        dateNamePatternStrings     = namePatternsFromResource(defaultDateNamePatternSource,     resourceLoader),
+        dateTimeNamePatternStrings = namePatternsFromResource(defaultDateTimeNamePatternSource, resourceLoader),
+      )
     },
 
     mojozCustomTypesFile :=

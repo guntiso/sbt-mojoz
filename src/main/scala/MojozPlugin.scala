@@ -140,7 +140,7 @@ object MojozPlugin extends AutoPlugin {
       },
     mojozAllCompilerMetadataFiles := {
       Seq(
-        (mojozMdConventionsResources.value ** "*-patterns.txt").get,
+        ((Compile / unmanagedResources).value ** "*-patterns.txt").get,
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
         ((Compile / unmanagedResources).value ** "tresql-function-signatures*.txt").get,
