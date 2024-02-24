@@ -9,8 +9,13 @@ import sbt.Keys.{baseDirectory, resourceGenerators, resourceManaged, unmanagedRe
 import sbt._
 import sbt.plugins.JvmPlugin
 
+import java.io.InputStream
+
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
+    val mojozCompilerCacheFolder = settingKey[File]("Mojoz compiler cache folder")
+    val mojozResourceLoader = taskKey[String => InputStream]("Resource loader for compilation")
+
     val mojozMdConventions = taskKey[MdConventions]("Mojoz metadata conventions")
     val mojozMetadataFileFilterPredicate = settingKey[File => Boolean]("Predicate to filter files in metadata folders")
     val mojozDbNaming = settingKey[String => String]("Db naming rules. Transformation function from metadata name to database name")
@@ -33,6 +38,16 @@ object MojozTableMetadataPlugin extends AutoPlugin {
   override def requires = JvmPlugin
 
   override val projectSettings = Seq(
+    mojozCompilerCacheFolder :=
+      (Compile / resourceManaged).value,
+    mojozResourceLoader := {
+      (r: String) =>
+        ((Compile / unmanagedResources).value ++
+         (mojozCompilerCacheFolder.value ** "*").get
+        )
+          .find(_.getAbsolutePath endsWith r)
+          .map(new java.io.FileInputStream(_)).getOrElse(getClass.getResourceAsStream(r))
+    },
     mojozTableMetadataFolders := Seq(baseDirectory .value / "tables"),
     mojozMetadataFileFilterPredicate := (f => f.getName.endsWith(".yaml")),
     mojozDbNaming := identity,
@@ -46,7 +61,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
 
     mojozMdConventions := {
       import MdConventions._
-      val resourceLoader = MojozPlugin.autoImport.mojozResourceLoader.value
+      val resourceLoader = mojozResourceLoader.value
       new SimplePatternMdConventions(
         booleanNamePatternStrings  = namePatternsFromResource(defaultBooleanNamePatternSource,  resourceLoader),
         dateNamePatternStrings     = namePatternsFromResource(defaultDateNamePatternSource,     resourceLoader),
