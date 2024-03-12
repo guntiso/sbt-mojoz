@@ -4,7 +4,7 @@ package org.mojoz
 import org.mojoz.metadata._
 import org.mojoz.metadata.in.{YamlMd, YamlTableDefLoader, YamlTypeDefLoader}
 import org.mojoz.metadata.io.MdConventions
-import org.mojoz.querease.TresqlMetadata
+import org.mojoz.querease.{QuereaseMetadata, TresqlMetadata}
 import sbt.Keys.{baseDirectory, resourceGenerators, resourceManaged, unmanagedResources}
 import sbt._
 import sbt.plugins.JvmPlugin
@@ -23,6 +23,8 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     val mojozCustomTypesFile = taskKey[Option[File]]("Mojoz custom types file")
     val mojozTypeDefs = taskKey[collection.immutable.Seq[TypeDef]]("Mojoz type definitions")
 
+    val mojozDefaultCpName = settingKey[String]("Mojoz default connection pool name")
+    val mojozDbAliasToDb = taskKey[Map[String, String]]("Mojoz database alias to database for views")
     val mojozTableMetadataFolders = settingKey[Seq[File]]("Mojoz table metadata folders")
     val mojozTableMetadataFiles = taskKey[Seq[(File, String)]]("All table metadata files + relative paths they are kept in")
     val mojozRawTableMetadata = taskKey[Seq[YamlMd]]("Raw table metadata")
@@ -79,7 +81,14 @@ object MojozTableMetadataPlugin extends AutoPlugin {
         .map(TypeMetadata.mergeTypeDefs(_, TypeMetadata.defaultTypeDefs))
         .getOrElse(TypeMetadata.customizedTypeDefs),
 
-    mojozTableMetadata := new TableMetadata(new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs, mojozDbNaming.value),
+    mojozDefaultCpName := "main",
+    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader.value, mojozDefaultCpName.value),
+    mojozTableMetadata :=
+      new TableMetadata(
+        new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs,
+        mojozDbNaming.value,
+        mojozDbAliasToDb.value,
+      ),
     mojozDbNames       := mojozTableMetadata.value.tableDefs.map(_.db).distinct.sortBy(Option(_) getOrElse ""),
 
     mojozTresqlTableMetadataFileName := ((Compile / resourceManaged).value / "tresql-table-metadata.yaml").getAbsolutePath,
