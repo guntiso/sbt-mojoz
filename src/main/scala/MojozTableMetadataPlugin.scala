@@ -23,7 +23,6 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     val mojozCustomTypesFile = taskKey[Option[File]]("Mojoz custom types file")
     val mojozTypeDefs = taskKey[collection.immutable.Seq[TypeDef]]("Mojoz type definitions")
 
-    val mojozDefaultCpName = settingKey[String]("Mojoz default connection pool name")
     val mojozDbAliasToDb = taskKey[Map[String, String]]("Mojoz database alias to database for views")
     val mojozTableMetadataFolders = settingKey[Seq[File]]("Mojoz table metadata folders")
     val mojozTableMetadataFiles = taskKey[Seq[(File, String)]]("All table metadata files + relative paths they are kept in")
@@ -81,8 +80,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
         .map(TypeMetadata.mergeTypeDefs(_, TypeMetadata.defaultTypeDefs))
         .getOrElse(TypeMetadata.customizedTypeDefs),
 
-    mojozDefaultCpName := "main",
-    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader.value, mojozDefaultCpName.value),
+    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader.value),
     mojozTableMetadata :=
       new TableMetadata(
         new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs,
