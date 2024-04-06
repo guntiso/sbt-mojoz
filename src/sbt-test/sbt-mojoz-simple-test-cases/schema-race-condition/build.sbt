@@ -2,7 +2,7 @@
 lazy val commonSettings = Seq(
   organization := "org.mojoz",
   version := "0.1",
-  scalaVersion := "2.12.14",
+  scalaVersion := "2.12.19",
   mojozMdConventions := org.mojoz.metadata.io.MdConventions,
   mojozTypeDefs := org.mojoz.metadata.TypeMetadata.customizedTypeDefs,
 )
