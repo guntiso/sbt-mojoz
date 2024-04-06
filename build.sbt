@@ -18,8 +18,8 @@ lazy val root = (project in file("."))
     },
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
-      "org.mojoz"                  %% "mojoz"                             % "2.0.0",
-      "org.mojoz"                  %% "querease"                          % "5.0.1",
+      "org.mojoz"                  %% "mojoz"                             % "2.1.0",
+      "org.mojoz"                  %% "querease"                          % "5.1.0",
       "org.tresql"                 %% "tresql"                            % "10.0.0"
     ),
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
