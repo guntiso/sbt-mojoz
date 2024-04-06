@@ -1,1 +1,1 @@
-addSbtPlugin("ch.epfl.scala" % "sbt-version-policy" % "1.0.1")
+addSbtPlugin("ch.epfl.scala" % "sbt-version-policy" % "3.2.0")
