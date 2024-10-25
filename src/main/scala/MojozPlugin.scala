@@ -67,6 +67,7 @@ object MojozPlugin extends AutoPlugin {
 
     mojozDtosPackage := "dto",
     mojozDtosImports := Seq(
+      "org.mojoz.querease.QuereaseMetadata", // used in resolver parameters
       "org.tresql._",
     ),
 
