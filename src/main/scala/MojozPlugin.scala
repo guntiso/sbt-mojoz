@@ -1,17 +1,11 @@
 package org.mojoz
 
 import org.mojoz.metadata.ViewDef
-import org.mojoz.metadata.in.{JoinsParser, YamlMd, YamlViewDefLoader}
-import org.tresql.{Cache, MacroResourcesImpl}
-import org.mojoz.querease.{Querease, TresqlJoinsParser, TresqlMetadata}
-import sbt.{AutoPlugin, Compile, File, HashFileInfo, IO, NothingFilter, Path}
-import sbt.{settingKey, SimpleFilter, Sync, taskKey, Tracked, WatchSource}
-import sbt.Keys._
+import org.mojoz.metadata.in.YamlMd
+import org.mojoz.querease.Querease
+import sbt.Keys.*
 import sbt.plugins.JvmPlugin
-
-import java.io.InputStream
-import scala.compat.Platform
-import scala.util.control.NonFatal
+import sbt.{AutoPlugin, File, settingKey, taskKey}
 
 object MojozPlugin extends AutoPlugin {
   object autoImport {
@@ -55,12 +49,12 @@ object MojozPlugin extends AutoPlugin {
     val mojozUninheritableExtras = settingKey[collection.immutable.Seq[String]]("View extensions not to be inherited")
   }
 
-  import autoImport._
-  import MojozTableMetadataPlugin.autoImport._
+  import MojozTableMetadataPlugin.autoImport.*
+  import autoImport.*
   override def trigger = noTrigger
   override def requires = JvmPlugin && MojozTableMetadataPlugin
 
-  import sbt._
+  import sbt.*
   import sbt.util.FileInfo
 
   override val projectSettings = Seq(
@@ -161,7 +155,7 @@ object MojozPlugin extends AutoPlugin {
           }.toSeq
         compiledViews
       }
-      import sbt.util.CacheImplicits._
+      import sbt.util.CacheImplicits.*
       val allSourceFiles = mojozAllSourceFiles.value
       val compilerMetadataFiles = mojozAllCompilerMetadataFiles.value
 
