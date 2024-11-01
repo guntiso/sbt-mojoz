@@ -60,15 +60,8 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     },
     mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
-    mojozMdConventions := {
-      import MdConventions._
-      val resourceLoader = mojozResourceLoader.value
-      new SimplePatternMdConventions(
-        booleanNamePatternStrings  = namePatternsFromResource(defaultBooleanNamePatternSource,  resourceLoader),
-        dateNamePatternStrings     = namePatternsFromResource(defaultDateNamePatternSource,     resourceLoader),
-        dateTimeNamePatternStrings = namePatternsFromResource(defaultDateTimeNamePatternSource, resourceLoader),
-      )
-    },
+    mojozMdConventions :=
+      new MdConventions.SimplePatternMdConventions(mojozResourceLoader.value),
 
     mojozCustomTypesFile :=
       ((Compile / unmanagedResources).value ** "mojoz-custom-types.yaml").get.headOption,
