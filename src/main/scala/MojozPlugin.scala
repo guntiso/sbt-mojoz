@@ -115,6 +115,7 @@ object MojozPlugin extends AutoPlugin {
     mojozShowFailedViewQuery := false,
     mojozQuerease :=
       new Querease {
+        override lazy val aliasToDb           = mojozDbAliasToDb.value
         override lazy val yamlMetadata        = mojozRawYamlMetadata.value
         override lazy val metadataConventions = mojozMdConventions.value
         override lazy val typeDefs            = mojozTypeDefs.value
