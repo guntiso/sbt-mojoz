@@ -33,7 +33,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
   override val projectSettings = Seq(
     mojozSchemaSqlDirectory     := (Compile / resourceManaged).value,
-    mojozSchemaSqlDbNames       := mojozDbNames.value,
+    mojozSchemaSqlDbNames       := mojozTableMetadata.value.tableDefs.map(_.db).distinct.sortBy(Option(_) getOrElse ""),
     mojozSchemaSqlFiles         := mojozSchemaSqlDbNames.value.map { db =>
       mojozSchemaSqlDirectory.value / s"db-schema${Option(db).map("-" + _) getOrElse ""}.sql"
     },
