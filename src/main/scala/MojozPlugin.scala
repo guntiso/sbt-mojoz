@@ -110,7 +110,7 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
     mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
 
-    mojozTresqlMacrosClass := Some(classOf[org.tresql.Macros]),
+    mojozTresqlMacrosClass := Some(classOf[org.mojoz.querease.QuereaseMacros]),
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
     mojozQuerease :=
