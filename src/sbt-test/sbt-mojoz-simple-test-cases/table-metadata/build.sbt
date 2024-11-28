@@ -4,7 +4,7 @@ organization := "org.mojoz"
 
 version := "0.1"
 
-scalaVersion := "2.12.19"
+scalaVersion := "2.12.20"
 
 resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
