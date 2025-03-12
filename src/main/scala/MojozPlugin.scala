@@ -16,6 +16,9 @@ object MojozPlugin extends AutoPlugin {
     val mojozJobMetadataFolders = settingKey[Seq[File]]("Job metadata folders for wabase projects")
     val mojozJobMetadataFiles = taskKey[Seq[(File, String)]]("All job metadata files + relative paths they are kept in")
 
+    val mojozRouteMetadataFolders = settingKey[Seq[File]]("Route metadata folders for wabase projects")
+    val mojozRouteMetadataFiles = taskKey[Seq[(File, String)]]("All route metadata files + relative paths they are kept in")
+
     val mojozViewMetadataFolders = settingKey[Seq[File]]("Mojoz view metadata folders")
     val mojozViewMetadataFiles = taskKey[Seq[(File, String)]]("All view metadata files + relative paths they are kept in")
 
@@ -25,6 +28,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozGenerateMdFileList = taskKey[Seq[File]]("Generates -md-files.txt")
 
     val mojozRawJobMetadata  = taskKey[Seq[YamlMd]]("Raw job metadata")
+    val mojozRawRouteMetadata= taskKey[Seq[YamlMd]]("Raw route metadata")
     val mojozRawViewMetadata = taskKey[Seq[YamlMd]]("Raw view metadata")
     val mojozRawYamlMetadata = taskKey[collection.immutable.Seq[YamlMd]]("Raw yaml metadata - job metadata and view metadata")
 
@@ -72,6 +76,13 @@ object MojozPlugin extends AutoPlugin {
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
     },
 
+    mojozRouteMetadataFolders := Seq(baseDirectory.value / "routes"),
+    mojozRouteMetadataFiles := mojozRouteMetadataFolders.value.flatMap { mojozRouteMetadataFolder =>
+      Path.selectSubpaths(mojozRouteMetadataFolder, _.isFile).map {
+        case (f, p) => (f, mojozRouteMetadataFolder.getName + "/" + p.replace('\\', '/'))
+      }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
+    },
+
     mojozViewMetadataFolders := Seq(baseDirectory.value / "views"),
     mojozViewMetadataFiles := mojozViewMetadataFolders.value.flatMap { mojozViewMetadataFolder =>
       Path.selectSubpaths(mojozViewMetadataFolder, _.isFile).map {
@@ -81,6 +92,7 @@ object MojozPlugin extends AutoPlugin {
 
     mojozMetadataFilesForResources :=
       mojozJobMetadataFiles.value   ++
+      mojozRouteMetadataFiles.value ++
       mojozTableMetadataFiles.value ++
       mojozViewMetadataFiles.value,
 
@@ -102,9 +114,11 @@ object MojozPlugin extends AutoPlugin {
 
     mojozRawJobMetadata := mojozJobMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
+    mojozRawRouteMetadata := mojozRouteMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+
     mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
-    mojozRawYamlMetadata := (mojozRawJobMetadata.value ++ mojozRawViewMetadata.value).toVector,
+    mojozRawYamlMetadata := (mojozRawJobMetadata.value ++ mojozRawRouteMetadata.value ++ mojozRawViewMetadata.value).toVector,
 
     mojozViewMetadata := mojozQuerease.value.viewDefLoader.plainViewDefs,
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
@@ -138,6 +152,7 @@ object MojozPlugin extends AutoPlugin {
     mojozAllSourceFiles :=
       mojozAllCompilerMetadataFiles.value ++
       mojozJobMetadataFiles.value.map(_._1) ++
+      mojozRouteMetadataFiles.value.map(_._1) ++
       mojozViewMetadataFiles.value.map(_._1),
     mojozCompileViews := {
       var compilerCacheFileNames: Seq[String] = Nil
@@ -289,6 +304,7 @@ object MojozPlugin extends AutoPlugin {
     watchSources := {
       watchSources.value ++
       mojozJobMetadataFolders.value.map(WatchSource(_)) ++
+      mojozRouteMetadataFolders.value.map(WatchSource(_)) ++
       mojozTableMetadataFolders.value.map(WatchSource(_)) ++
       mojozViewMetadataFolders.value.map(WatchSource(_)) ++
       mojozAllSourceFiles.value.groupBy(_.getParentFile.getAbsolutePath).map {
