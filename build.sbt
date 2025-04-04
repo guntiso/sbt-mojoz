@@ -19,9 +19,9 @@ lazy val root = (project in file("."))
     resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
       "org.mojoz"               %% "mojoz"                      % "5.5.0-SNAPSHOT",
-      "org.mojoz"               %% "querease"                   % "8.0.0-RC1-SNAPSHOT"  exclude(
+      "org.mojoz"               %% "querease"                   % "8.0.0-RC2-SNAPSHOT"  exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-      "org.tresql"              %% "tresql"                     % "13.0.0-SNAPSHOT" exclude(
+      "org.tresql"              %% "tresql"                     % "13.0.0-RC1-SNAPSHOT" exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
       "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.4.0" % "provided",
     ),
