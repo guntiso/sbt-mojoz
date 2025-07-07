@@ -6,7 +6,7 @@ version := "0.1"
 
 scalaVersion := "2.12.20"
 
-resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+resolvers += "snapshots" at "https://central.sonatype.com/repository/maven-snapshots"
 
 lazy val root = (project in file(".")).enablePlugins(MojozTableMetadataPlugin)
 

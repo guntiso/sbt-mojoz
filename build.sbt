@@ -16,7 +16,7 @@ lazy val root = (project in file("."))
       if (javaVersion != "11")
         sys.error("Java 11 is required for this project. Found " + javaVersion + " instead")
     },
-    resolvers += "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    resolvers += "snapshots" at "https://central.sonatype.com/repository/maven-snapshots",
     libraryDependencies ++= Seq(
       "org.mojoz"               %% "mojoz"                      % "6.0.0-RC1-SNAPSHOT",
       "org.mojoz"               %% "querease"                   % "8.0.0-RC3-SNAPSHOT"  exclude(
