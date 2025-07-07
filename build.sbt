@@ -33,8 +33,9 @@ lazy val root = (project in file("."))
   .settings(
     publishTo := version { v: String =>
       val nexus = "https://oss.sonatype.org/"
+      val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
       if (v.trim.endsWith("SNAPSHOT"))
-        Some("snapshots" at nexus + "content/repositories/snapshots")
+        Some("central-snapshots" at centralSnapshots)
       else
         Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }.value,
