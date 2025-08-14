@@ -1,6 +1,7 @@
 package org.mojoz
 
 import org.mojoz.metadata.out.DdlGenerator
+import org.mojoz.metadata.TableDef
 import sbt.Keys._
 import sbt._
 import sbt.plugins.JvmPlugin
@@ -12,6 +13,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
     val mojozSchemaSqlDbNames       = taskKey[Seq[String]]      ("Database names for schema generation, may contain null for default database")
     val mojozSchemaSqlFiles         = taskKey[Seq[File]]        ("Files where to write schema sql, corresponding to mojozSchemaSqlDbNames")
     val mojozSchemaSqlGenerators    = taskKey[Seq[DdlGenerator]]("SqlGenerators (per db) used to generate schema, see org.mojoz.metadata.out.DdlGenerator for available generators")
+    val mojozSchemaSqlShouldInclude = taskKey[TableDef => Boolean] ("Should table be included in generated sql")
     val mojozGenerateSchemaSqlFiles = taskKey[Seq[File]]        ("Generates schema sql")
     val mojozPrintSchemaSql         = inputKey[Unit]            ("Prints schema sql string for (space-delimited) table name(s)")
 
@@ -46,6 +48,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       val sqlFile = mojozDependencyGeneratedSqls.value
       val tableMd = mojozTableMetadata.value
       val dbToTableDefs = tableMd.tableDefs.groupBy(_.db)
+      val shouldInclude = mojozSchemaSqlShouldInclude.value
       (mojozSchemaSqlDbNames.value, mojozSchemaSqlFiles.value, mojozSchemaSqlGenerators.value).zipped.toList
       .filter {
         case (db, schemaFile, sqlGenerator) =>
@@ -54,10 +57,12 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       .map {
         case (db, schemaFile, sqlGenerator) =>
           val allTables = dbToTableDefs(db).map(_.name).sorted
-          IO.write(schemaFile, sqlGenerator.schema(allTables.map(tableMd.tableDef(_, db))))
+          IO.write(schemaFile, sqlGenerator.schema(allTables.map(tableMd.tableDef(_, db)).filter(shouldInclude)))
           schemaFile
       }
     },
+
+    mojozSchemaSqlShouldInclude := { _ => true },
 
     mojozPrintSchemaSql := {
       import sbt.complete.DefaultParsers._
