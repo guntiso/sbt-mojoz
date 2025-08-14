@@ -46,7 +46,12 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       val sqlFile = mojozDependencyGeneratedSqls.value
       val tableMd = mojozTableMetadata.value
       val dbToTableDefs = tableMd.tableDefs.groupBy(_.db)
-      (mojozSchemaSqlDbNames.value, mojozSchemaSqlFiles.value, mojozSchemaSqlGenerators.value).zipped.toList map {
+      (mojozSchemaSqlDbNames.value, mojozSchemaSqlFiles.value, mojozSchemaSqlGenerators.value).zipped.toList
+      .filter {
+        case (db, schemaFile, sqlGenerator) =>
+          schemaFile != null && sqlGenerator != null
+      }
+      .map {
         case (db, schemaFile, sqlGenerator) =>
           val allTables = dbToTableDefs(db).map(_.name).sorted
           IO.write(schemaFile, sqlGenerator.schema(allTables.map(tableMd.tableDef(_, db))))
@@ -79,7 +84,8 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
               if (tableDefs.nonEmpty) {
                 if (db != null)
                   println(s"\n----- $db -----\n")
-                println(sqlGenerator.schema(tableDefs))
+                if (sqlGenerator != null)
+                  println(sqlGenerator.schema(tableDefs))
               }
           }
       }
