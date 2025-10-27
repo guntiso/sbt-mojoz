@@ -158,11 +158,17 @@ object MojozPlugin extends AutoPlugin {
       var compilerCacheFileNames: Seq[String] = Nil
       def compileViews(previouslyCompiledQueries: Set[String] = Set.empty): Set[String] = {
         val (compiledViews, caches) =
+         try {
           mojozQuerease.value.compileAllQueries(
             previouslyCompiledQueries,
             mojozShowFailedViewQuery.value,
             streams.value.log.info(_),
           )
+         } catch {
+          case scala.util.control.NonFatal(ex) if !mojozShowFailedViewQuery.value =>
+            throw new RuntimeException(
+              s"${ex.getMessage}\nRunning with mojozShowFailedViewQuery := true might add more details.", ex)
+         }
         compilerCacheFileNames =
           caches.map { case (name, cache) =>
             val file = mojozCompilerCacheFolder.value / name
