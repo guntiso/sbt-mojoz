@@ -20,5 +20,5 @@ Compile / compile := {
 }
 
 libraryDependencies ++= Seq(
-  "org.mojoz"                  %% "querease"                          % "8.0.0",
+  "org.mojoz"                  %% "querease"                          % "9.0.0",
 )
