@@ -229,10 +229,10 @@ object MojozPlugin extends AutoPlugin {
         |  ${distinctTableNames.map(t => s"class ${scalaClassNameString(t)} {}").mkString("\n  ")}
         |}
         |object DtoMapping {
-        |  val viewNameToClass = Map[String, Class[_ <: Dto]](
+        |  val viewNameToClass = Map[String, Class[? <: Dto]](
         |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${scalaClassNameString(v.name)}]""").mkString(",\n    ")}
         |  )
-        |  val viewClassToTableClass = Map[Class[_ <: Dto], Class[_]](
+        |  val viewClassToTableClass = Map[Class[? <: Dto], Class[?]](
         |    ${viewDefs.filter(_.table != null).map(v =>
                 s"classOf[${scalaClassNameString(v.name)}] -> classOf[Tables.${scalaClassNameString(v.table)}]"
                ).mkString(",\n    ")
