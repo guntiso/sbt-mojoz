@@ -15,7 +15,7 @@ mojozDtosImports := Seq("sbtmojoz.test._")
 mojozSchemaSqlDirectory := file("db/creation")
 
 mojozQuerease :=
-  new org.mojoz.querease.Querease {
+  new org.mojoz.querease.Querease with org.mojoz.querease.compiling.ViewCompiler {
     override lazy val yamlMetadata        = mojozRawYamlMetadata.value
     override lazy val metadataConventions = mojozMdConventions.value
     override lazy val typeDefs            = mojozTypeDefs.value
