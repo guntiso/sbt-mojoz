@@ -1,19 +1,18 @@
 package org.mojoz
 
 
-import org.mojoz.metadata._
+import org.mojoz.metadata.*
 import org.mojoz.metadata.in.{YamlMd, YamlTableDefLoader, YamlTypeDefLoader}
 import org.mojoz.metadata.io.MdConventions
 import org.mojoz.querease.{QuereaseMetadata, TresqlMetadata}
-import sbt.Keys.{baseDirectory, resourceGenerators, resourceManaged, unmanagedResources}
-import sbt._
+import sbt.Keys.{baseDirectory, resourceDirectories, resourceGenerators, resourceManaged, unmanagedResources}
+import sbt.*
 import sbt.plugins.JvmPlugin
 
 import java.io.InputStream
 
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
-    val mojozCompilerCacheFolder = settingKey[File]("Mojoz compiler cache folder")
     val mojozResourceLoader = taskKey[String => InputStream]("Resource loader for compilation")
 
     val mojozMdConventions = taskKey[MdConventions]("Mojoz metadata conventions")
@@ -38,15 +37,10 @@ object MojozTableMetadataPlugin extends AutoPlugin {
   override def requires = JvmPlugin
 
   override val projectSettings = Seq(
-    mojozCompilerCacheFolder :=
-      (Compile / resourceManaged).value,
     mojozResourceLoader := {
-      (r: String) =>
-        ((Compile / unmanagedResources).value ++
-         (mojozCompilerCacheFolder.value ** "*").get
-        )
-          .find(_.getAbsolutePath endsWith r)
-          .map(new java.io.FileInputStream(_)).getOrElse(getClass.getResourceAsStream(r))
+      (r: String) => MojozPlugin
+        .getMojozResourcesClassLoader((Compile / resourceDirectories).value)
+        .getResourceAsStream(r.stripPrefix("/"))  // URL class loader probably will fail with resource prefix '/'
     },
     mojozTableMetadataFolders := Seq(baseDirectory .value / "tables"),
     mojozMetadataFileFilterPredicate := (f => f.getName.endsWith(".yaml")),
