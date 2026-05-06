@@ -162,6 +162,7 @@ object MojozPlugin extends AutoPlugin {
       mojozViewMetadataFiles.value.map(_._1),
     mojozCompileViews := {
       var compilerCacheFileNames: Seq[String] = Nil
+      val mojozCompilerCacheFolder = (Compile / resourceManaged).value
       def compileViews(previouslyCompiledQueries: Set[String] = Set.empty): Set[String] = {
         val (compiledViews, caches) =
          try {
@@ -177,7 +178,7 @@ object MojozPlugin extends AutoPlugin {
          }
         compilerCacheFileNames =
           caches.map { case (name, cache) =>
-            val file = mojozCompilerCacheFolder.value / name
+            val file = mojozCompilerCacheFolder / name
             IO.write(file, cache)
             name
           }.toSeq
@@ -215,7 +216,7 @@ object MojozPlugin extends AutoPlugin {
 
       cachedCacheFileNames(compilerCacheFileNames.toSet)
         .toSeq.sorted
-        .map(mojozCompilerCacheFolder.value / _)
+        .map(mojozCompilerCacheFolder / _)
         .filter(_.exists)
     },
 
