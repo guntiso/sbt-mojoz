@@ -13,8 +13,6 @@ import java.io.InputStream
 
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
-    val mojozResourceLoader = taskKey[String => InputStream]("Resource loader for compilation")
-
     val mojozMdConventions = taskKey[MdConventions]("Mojoz metadata conventions")
     val mojozMetadataFileFilterPredicate = settingKey[File => Boolean]("Predicate to filter files in metadata folders")
     val mojozDbNaming = settingKey[String => String]("Db naming rules. Transformation function from metadata name to database name")
@@ -37,11 +35,6 @@ object MojozTableMetadataPlugin extends AutoPlugin {
   override def requires = JvmPlugin
 
   override val projectSettings = Seq(
-    mojozResourceLoader := {
-      (r: String) => MojozPlugin
-        .getMojozResourcesClassLoader((Compile / resourceDirectories).value)
-        .getResourceAsStream(r.stripPrefix("/"))  // URL class loader probably will fail with resource prefix '/'
-    },
     mojozTableMetadataFolders := Seq(baseDirectory .value / "tables"),
     mojozMetadataFileFilterPredicate := (f => f.getName.endsWith(".yaml")),
     mojozDbNaming := identity,
@@ -54,7 +47,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
 
     mojozMdConventions :=
-      new MdConventions.SimplePatternMdConventions(mojozResourceLoader.value),
+      new MdConventions.SimplePatternMdConventions(mojozResourceLoader((Compile / resourceDirectories).value)),
 
     mojozCustomTypesFile :=
       ((Compile / unmanagedResources).value ** "mojoz-custom-types.yaml").get.headOption,
@@ -66,7 +59,7 @@ object MojozTableMetadataPlugin extends AutoPlugin {
         .map(TypeMetadata.mergeTypeDefs(_, TypeMetadata.defaultTypeDefs))
         .getOrElse(TypeMetadata.customizedTypeDefs),
 
-    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader.value),
+    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader((Compile / resourceDirectories).value)),
     mojozTableMetadata :=
       new TableMetadata(
         new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs,
@@ -84,4 +77,8 @@ object MojozTableMetadataPlugin extends AutoPlugin {
 
     Compile / resourceGenerators += mojozGenerateTresqlTableMetadata.map(Seq(_)).taskValue
   )
+
+  def mojozResourceLoader(files: Seq[File]) = (r: String) => MojozPlugin
+    .getMojozResourceClassLoader(files)
+    .getResourceAsStream(r.stripPrefix("/"))  // URL class loader probably will fail with resource prefix '/'
 }

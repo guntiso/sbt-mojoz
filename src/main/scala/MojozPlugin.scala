@@ -6,6 +6,7 @@ import org.mojoz.metadata.in.YamlMd
 import org.mojoz.querease.Querease
 import org.mojoz.querease.compiling.ViewCompiler
 import sbt.Keys.*
+import sbt.internal.inc.ScalaInstance
 import sbt.plugins.JvmPlugin
 import sbt.{AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
 
@@ -141,7 +142,7 @@ object MojozPlugin extends AutoPlugin {
         override lazy val typeDefs            = mojozTypeDefs.value
         override lazy val tableMetadata       = mojozTableMetadata.value
         override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
-        override lazy val resourceLoader      = mojozResourceLoader.value
+        override lazy val resourceClassLoader = org.mojoz.MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value ++ Seq((Compile / classDirectory).value))
         override lazy val uninheritableExtras = mojozUninheritableExtras.value
         override protected lazy val parserCacheSize = -1 // unlimited cache for compilation
       },
@@ -314,7 +315,7 @@ object MojozPlugin extends AutoPlugin {
     },
 
     mojozMacroSources := {
-      val config = ConfigFactory.load(getMojozResourcesClassLoader((Compile / resourceDirectories).value))
+      val config = ConfigFactory.load(getMojozResourceClassLoader((Compile / resourceDirectories).value))
       val className = config.getString("tresql.macros-class")
       try {
         Class.forName(className)
@@ -348,7 +349,7 @@ object MojozPlugin extends AutoPlugin {
     dependencyClasspath := (Compile / dependencyClasspath).value,
   ))
 
-  def getMojozResourcesClassLoader(files: Seq[File]): ClassLoader = {
+  def getMojozResourceClassLoader(files: Seq[File]): ClassLoader = {
     val urls = files.map(_.toURI.toURL).toArray
     new java.net.URLClassLoader(urls, getClass.getClassLoader)
   }
