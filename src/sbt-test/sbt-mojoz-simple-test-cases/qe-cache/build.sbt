@@ -21,7 +21,7 @@ mojozQuerease :=
     override lazy val typeDefs            = mojozTypeDefs.value
     override lazy val tableMetadata       = mojozTableMetadata.value
     override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
-    override lazy val resourceLoader      = mojozResourceLoader.value
+    override lazy val resourceClassLoader = org.mojoz.MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value ++ Seq((Compile / classDirectory).value))
     override lazy val uninheritableExtras = mojozUninheritableExtras.value
     override def compileAllQueries(
       previouslyCompiledQueries: Set[String],
