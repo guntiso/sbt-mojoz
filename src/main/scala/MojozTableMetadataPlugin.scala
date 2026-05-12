@@ -9,8 +9,6 @@ import sbt.Keys.{baseDirectory, resourceDirectories, resourceGenerators, resourc
 import sbt.*
 import sbt.plugins.JvmPlugin
 
-import java.io.InputStream
-
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
     val mojozMdConventions = taskKey[MdConventions]("Mojoz metadata conventions")

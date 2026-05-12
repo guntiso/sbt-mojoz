@@ -323,11 +323,14 @@ object MojozPlugin extends AutoPlugin {
         Nil
       } catch {
         case _: ClassNotFoundException =>
-          val relativePath = className.replace('.', java.io.File.separatorChar) + ".scala"
-          val file = new java.io.File((Compile / scalaSource).value, relativePath)
-          if (!file.exists())
-            sys.error(s"Neither macro class: $className nor macro source file found: ${file.getAbsolutePath}")
-          Seq(file)
+          val fileName = className.split('.').last + ".scala"
+          val found = (PathFinder((Compile / scalaSource).value) ** fileName).get
+          if (found.isEmpty)
+            sys.error(s"Neither macro class: $className nor macro source file: $fileName found under ${(Compile / scalaSource).value.getAbsolutePath}")
+          else if (found.size > 1)
+            sys.error(s"Multiple source files named $fileName found:\n${found.mkString("\n")}")
+          else
+            found
       }
     },
 
