@@ -5,10 +5,10 @@ import org.mojoz.metadata.ViewDef
 import org.mojoz.metadata.in.YamlMd
 import org.mojoz.querease.Querease
 import org.mojoz.querease.compiling.ViewCompiler
+import sbt.Def.Classpath
 import sbt.Keys.*
-import sbt.internal.inc.ScalaInstance
 import sbt.plugins.JvmPlugin
-import sbt.{AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
+import sbt.{Attributed, AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
 
 object MojozPlugin extends AutoPlugin {
   object autoImport {
@@ -57,7 +57,8 @@ object MojozPlugin extends AutoPlugin {
 
     lazy val MojozMacroCompile = config("macro-compile").extend(Compile)
     lazy val mojozMacroSources = taskKey[Seq[File]]("Macro source files")
-
+    val mojozMacroCompile = taskKey[Unit]("Compiles Scala macro sources using the project's Scala compiler as a Java subprocess")
+    val sbtClassDirectory = taskKey[File]("SBT's directory of compiled classes, i.e. project/target/...")
   }
 
   import MojozTableMetadataPlugin.autoImport.*
@@ -142,7 +143,7 @@ object MojozPlugin extends AutoPlugin {
         override lazy val typeDefs            = mojozTypeDefs.value
         override lazy val tableMetadata       = mojozTableMetadata.value
         override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
-        override lazy val resourceClassLoader = org.mojoz.MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value ++ Seq((Compile / classDirectory).value))
+        override lazy val resourceClassLoader = org.mojoz.MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value))
         override lazy val uninheritableExtras = mojozUninheritableExtras.value
         override protected lazy val parserCacheSize = -1 // unlimited cache for compilation
       },
@@ -347,7 +348,71 @@ object MojozPlugin extends AutoPlugin {
     sources             := mojozMacroSources.value,
     classDirectory      := (Compile / classDirectory).value,
     dependencyClasspath := (Compile / dependencyClasspath).value,
+    sbtClassDirectory   := {
+      val sbtScalaVer = appConfiguration.value.provider.scalaProvider.version()
+      val sbtScalaBinVer = sbtScalaVer.split('.').take(2).mkString(".")
+      baseDirectory.value / "project" / "target" / s"scala-$sbtScalaBinVer" / s"sbt-${sbtBinaryVersion.value}" / "classes"
+    },
+    mojozMacroCompile   := {
+      // compile macro sources for tresql scala macro
+      compile.value
+      // compile macro sources for view compiler which runs no SBT's own scala
+      val scalaProvider = appConfiguration.value.provider.scalaProvider
+      val sbtDepClasspath = Attributed.blankSeq(MojozPlugin.buildClasspath)
+      MojozPlugin.runScalaCompiler(
+        sources.value,
+        sbtClassDirectory.value,
+        sbtDepClasspath,
+        scalaProvider.jars().toSeq,
+        scalaProvider.version(),
+        javaHome.value,
+        streams.value.log,
+      )
+    },
   ))
+
+  def runScalaCompiler(
+    sources: Seq[File],
+    destinationDirectory: File,
+    classpath: Classpath,
+    scalaJars: Seq[File],
+    scalaVersion: String,
+    javaHome: Option[File],
+    log: sbt.util.Logger,
+  ): Unit = {
+    if (sources.isEmpty) return
+    destinationDirectory.mkdirs()
+    val javaExe = javaHome
+      .map(_ / "bin" / "java")
+      .getOrElse(file(sys.props("java.home")) / "bin" / "java")
+      .getAbsolutePath
+    val compilerCp = scalaJars.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
+    val projectCp  = classpath.map(_.data.getAbsolutePath).mkString(java.io.File.pathSeparator)
+    val cmd = Seq(
+      javaExe,
+      "-cp", compilerCp,
+      "scala.tools.nsc.Main",
+      "-classpath", projectCp,
+      "-d", destinationDirectory.getAbsolutePath,
+    ) ++ sources.map(_.getAbsolutePath)
+    log.info(s"Compiling ${sources.size} Scala source(s) with Scala $scalaVersion into $destinationDirectory...")
+    import scala.sys.process._
+    val exitCode = Process(cmd) ! new ProcessLogger {
+      override def out(s: => String): Unit = log.info(s)
+      override def err(s: => String): Unit = log.error(s)
+      override def buffer[T](f: => T): T = f
+    }
+    if (exitCode != 0) sys.error(s"Scala compilation failed with exit code $exitCode")
+  }
+
+  def buildClasspath: Seq[File] = {
+    def urls(cl: ClassLoader): Seq[java.net.URL] = cl match {
+      case null                           => Nil
+      case urlCl: java.net.URLClassLoader => urlCl.getURLs.toSeq ++ urls(urlCl.getParent)
+      case other                          => urls(other.getParent)
+    }
+    urls(getClass.getClassLoader).map(u => new File(u.toURI)).filter(_.exists)
+  }
 
   def getMojozResourceClassLoader(files: Seq[File]): ClassLoader = {
     val urls = files.map(_.toURI.toURL).toArray
