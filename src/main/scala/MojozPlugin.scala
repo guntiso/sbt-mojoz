@@ -6,7 +6,7 @@ import org.mojoz.metadata.in.YamlMd
 import org.mojoz.querease.Querease
 import org.mojoz.querease.compiling.ViewCompiler
 import sbt.Def.Classpath
-import sbt.Keys.*
+import sbt.Keys.{streams, *}
 import sbt.plugins.JvmPlugin
 import sbt.{Attributed, AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
 
@@ -57,7 +57,7 @@ object MojozPlugin extends AutoPlugin {
 
     lazy val MojozMacroCompile = config("macro-compile").extend(Compile)
     lazy val mojozMacroSources = taskKey[Seq[File]]("Macro source files")
-    val mojozMacroCompile = taskKey[Unit]("Compiles Scala macro sources using the project's Scala compiler as a Java subprocess")
+    val mojozMacroCompile = taskKey[Unit]("Compiles Scala macro sources using the SBT's scala compiler as a Java subprocess and project's scalaVersion Scala compiler")
     val sbtClassDirectory = taskKey[File]("SBT's directory of compiled classes, i.e. project/target/...")
   }
 
@@ -360,17 +360,28 @@ object MojozPlugin extends AutoPlugin {
       // compile macro sources for tresql scala macro
       compile.value
       // compile macro sources for view compiler which runs no SBT's own scala
-      val scalaProvider = appConfiguration.value.provider.scalaProvider
-      val sbtDepClasspath = Attributed.blankSeq(MojozPlugin.buildClasspath)
-      MojozPlugin.runScalaCompiler(
-        sources.value,
-        sbtClassDirectory.value,
-        sbtDepClasspath,
-        scalaProvider.jars().toSeq,
-        scalaProvider.version(),
-        javaHome.value,
-        streams.value.log,
+      val srcs      = sources.value
+      val sbtClsDir = sbtClassDirectory.value
+      val stampFile = sbtClsDir / ".mojoz-macro-compile-stamp"
+      val needsCompile = srcs.nonEmpty && (
+        !stampFile.exists() ||
+        srcs.exists(_.lastModified() > stampFile.lastModified())
       )
+      val log = streams.value.log // evaluate streams.value outside of if condition so it does not give warning
+      if (needsCompile) {
+        val scalaProvider = appConfiguration.value.provider.scalaProvider
+        val sbtDepClasspath = Attributed.blankSeq(MojozPlugin.buildClasspath)
+        MojozPlugin.runScalaCompiler(
+          srcs,
+          sbtClsDir,
+          sbtDepClasspath,
+          scalaProvider.jars().toSeq,
+          scalaProvider.version(),
+          javaHome.value,
+          log,
+        )
+        IO.touch(stampFile)
+      }
     },
   ))
 
@@ -398,7 +409,7 @@ object MojozPlugin extends AutoPlugin {
       "-classpath", projectCp,
       "-d", destinationDirectory.getAbsolutePath,
     ) ++ sources.map(_.getAbsolutePath)
-    log.info(s"Compiling ${sources.size} Scala source(s) with Scala $scalaVersion into $destinationDirectory...")
+    log.info(s"compiling ${sources.size} Scala source with Scala $scalaVersion to $destinationDirectory...")
     import scala.sys.process._
     val exitCode = Process(cmd) ! new ProcessLogger {
       override def out(s: => String): Unit = log.info(s)
