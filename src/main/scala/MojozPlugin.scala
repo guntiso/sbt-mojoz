@@ -12,7 +12,7 @@ import sbt.{Attributed, AutoPlugin, Compile, Def, File, config, settingKey, task
 
 object MojozPlugin extends AutoPlugin {
   object autoImport {
-    val mojozResourceClassLoader = taskKey[ClassLoader]("ClassLoader for resource loading for compilation")
+    val mojozResourceClassLoaderFiles = taskKey[Seq[File]]("Files for classLoader for resource loading for compilation")
     val mojozDtosPackage = settingKey[String]("Package where all dtos should be placed in")
     val mojozDtosImports = settingKey[Seq[String]]("List of imports for Dtos.scala")
 
@@ -71,8 +71,8 @@ object MojozPlugin extends AutoPlugin {
 
   override val projectSettings: Seq[Def.Setting[?]] = Seq(
 
-    mojozResourceClassLoader :=
-      MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value)),
+    mojozResourceClassLoaderFiles :=
+      (Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value),
 
     mojozDtosPackage := "dto",
     mojozDtosImports := Seq(
@@ -146,7 +146,7 @@ object MojozPlugin extends AutoPlugin {
         override lazy val typeDefs            = mojozTypeDefs.value
         override lazy val tableMetadata       = mojozTableMetadata.value
         override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
-        override lazy val resourceClassLoader = mojozResourceClassLoader.value
+        override lazy val resourceClassLoader = MojozPlugin.getMojozResourceClassLoader(mojozResourceClassLoaderFiles.value)
         override lazy val uninheritableExtras = mojozUninheritableExtras.value
         override protected lazy val parserCacheSize = -1 // unlimited cache for compilation
       },

@@ -16,12 +16,13 @@ mojozSchemaSqlDirectory := file("db/creation")
 
 mojozQuerease :=
   new org.mojoz.querease.Querease with org.mojoz.querease.compiling.ViewCompiler {
+    import org.mojoz.MojozPlugin
     override lazy val yamlMetadata        = mojozRawYamlMetadata.value
     override lazy val metadataConventions = mojozMdConventions.value
     override lazy val typeDefs            = mojozTypeDefs.value
     override lazy val tableMetadata       = mojozTableMetadata.value
     override lazy val macrosClass         = mojozTresqlMacrosClass.value.orNull
-    override lazy val resourceClassLoader = mojozResourceClassLoader.value
+    override lazy val resourceClassLoader = MojozPlugin.getMojozResourceClassLoader(mojozResourceClassLoaderFiles.value)
     override lazy val uninheritableExtras = mojozUninheritableExtras.value
     override def compileAllQueries(
       previouslyCompiledQueries: Set[String],
