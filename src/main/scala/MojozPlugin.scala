@@ -43,7 +43,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozSourceGenerators = taskKey[Seq[File]]("All mojoz source generation tasks")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
-    val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.tresql.Macros. Customization rarely needed - use tresql-macros.txt instead")
+    val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.mojoz.querease.QuereaseMacros. Customization rarely needed - use tresql-macros.txt instead")
     val mojozQuerease = taskKey[Querease with ViewCompiler]("Creates an instance of Querease for view compilation etc.")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
     val mojozGenerateDtosViewMetadata = taskKey[List[ViewDef]]("View metadata for dtos generation")
