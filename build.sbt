@@ -21,7 +21,7 @@ lazy val root = (project in file("."))
       "org.mojoz"               %% "mojoz"                      % "7.1.1",
       "org.mojoz"               %% "querease"                   % "10.0.0"  exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-      "org.tresql"              %% "tresql"                     % "13.1.0" exclude(
+      "org.tresql"              %% "tresql"                     % "13.4.0" exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
       "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.4.0" % "provided",
     ),
