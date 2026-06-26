@@ -57,7 +57,9 @@ object MojozTableMetadataPlugin extends AutoPlugin {
         .map(TypeMetadata.mergeTypeDefs(_, TypeMetadata.defaultTypeDefs))
         .getOrElse(TypeMetadata.customizedTypeDefs),
 
-    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(mojozResourceLoader((Compile / resourceDirectories).value)),
+    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(
+      MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value),
+    ),
     mojozTableMetadata :=
       new TableMetadata(
         new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs,

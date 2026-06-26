@@ -1,9 +1,8 @@
 package org.mojoz
 
-import com.typesafe.config.ConfigFactory
 import org.mojoz.metadata.ViewDef
 import org.mojoz.metadata.in.YamlMd
-import org.mojoz.querease.Querease
+import org.mojoz.querease.{Querease, QuereaseMetadata}
 import org.mojoz.querease.compiling.ViewCompiler
 import sbt.Def.Classpath
 import sbt.Keys.{streams, *}
@@ -43,7 +42,7 @@ object MojozPlugin extends AutoPlugin {
     val mojozSourceGenerators = taskKey[Seq[File]]("All mojoz source generation tasks")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
-    val mojozTresqlMacrosClass = settingKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.mojoz.querease.QuereaseMacros. Customization rarely needed - use tresql-macros.txt instead")
+    val mojozTresqlMacrosClass = taskKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.mojoz.querease.QuereaseMacros. Customization rarely needed - use tresql-macros.txt instead")
     val mojozQuerease = taskKey[Querease with ViewCompiler]("Creates an instance of Querease for view compilation etc.")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
     val mojozGenerateDtosViewMetadata = taskKey[List[ViewDef]]("View metadata for dtos generation")
@@ -135,7 +134,10 @@ object MojozPlugin extends AutoPlugin {
     mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
     mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
 
-    mojozTresqlMacrosClass := Some(classOf[org.mojoz.querease.QuereaseMacros]),
+    mojozTresqlMacrosClass := {
+      val _ = (MojozMacroCompile / mojozMacroCompile).value
+      Option(QuereaseMetadata.resolveMacrosClass(MojozPlugin.getMojozResourceClassLoader(mojozResourceClassLoaderFiles.value)))
+    },
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
     mojozQuerease :=
@@ -155,9 +157,12 @@ object MojozPlugin extends AutoPlugin {
         ((Compile / unmanagedResources).value ** "*-patterns.txt").get,
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
+        ((Compile / unmanagedResources).value ** "reference.conf").get,
         ((Compile / unmanagedResources).value ** "tresql-function-signatures*.txt").get,
         ((Compile / unmanagedResources).value ** "tresql-macros.txt").get,
+        ((Compile / unmanagedResources).value ** "tresql-resources.conf").get,
         ((Compile / unmanagedResources).value ** "tresql-scala-macro.properties").get,
+        Seq((MojozMacroCompile / sbtClassDirectory).value / ".mojoz-macro-compile-stamp"),
       ).flatten
     },
     mojozAllSourceFiles :=
@@ -318,9 +323,9 @@ object MojozPlugin extends AutoPlugin {
         tableMd.tableDefs.map(t => classFilePathFromName("Tables$" + classFileName(t.name)))
     },
 
-    mojozMacroSources := {
-      val config = ConfigFactory.load(getMojozResourceClassLoader((Compile / resourceDirectories).value))
-      val className = config.getString("tresql.macros-class")
+    mojozMacroSources := QuereaseMetadata.resolveMacrosClassName(getMojozResourceClassLoader((Compile / resourceDirectories).value))
+     .filter(_ != null)
+     .map { className =>
       try {
         Class.forName(className)
         Nil
@@ -335,7 +340,7 @@ object MojozPlugin extends AutoPlugin {
           else
             found
       }
-    },
+    }.getOrElse(Nil),
 
     // sbt tilde must watch changes in yaml files
     watchSources := {
