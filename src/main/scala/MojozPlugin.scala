@@ -306,6 +306,11 @@ object MojozPlugin extends AutoPlugin {
       (Compile / copyResources).value ++ mappings
     },
 
+    Compile / compile := {
+      (Compile / copyResources).value // expose tresql-scala-macro.properties
+      (Compile / compile).value
+    },
+
     mojozGeneratedFiles := {
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
