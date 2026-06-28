@@ -71,6 +71,26 @@ object MojozPlugin extends AutoPlugin {
   import sbt.*
   import sbt.util.FileInfo
 
+  private def mojozGenerateDtosScalaImpl: Def.Initialize[Task[Option[File]]] = Def.taskIf {
+    if (mojozShouldGenerateDtos.value) {
+      val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
+      val viewDefs = mojozGenerateDtosViewMetadata.value
+      val allViewDefsMap = mojozViewMetadata.value.map(v => v.name -> v).toMap
+      val classBuilder = mojozScalaGenerator.value
+      val mapping = mojozGenerateDtosMappingsScala.value
+      val contents = classBuilder.generateScalaSource(
+        List("package "+mojozDtosPackage.value, "") ++
+          mojozDtosImports.value.map("import "+_)   ++
+          List(""),
+        viewDefs,
+        List("", mapping),
+        allViewDefsMap,
+      )
+      IO.write(file, contents)
+      Some(file)
+    } else None
+  }
+
   override val projectSettings: Seq[Def.Setting[?]] = Seq(
 
     mojozResourceClassLoaderFiles := Def.uncached(
@@ -266,25 +286,7 @@ object MojozPlugin extends AutoPlugin {
     },
 
     mojozShouldGenerateDtos := true,
-    mojozGenerateDtosScala := Def.uncached {
-      val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
-      val viewDefs = mojozGenerateDtosViewMetadata.value
-      val allViewDefsMap = mojozViewMetadata.value.map(v => v.name -> v).toMap
-      val classBuilder = mojozScalaGenerator.value
-      val mapping = mojozGenerateDtosMappingsScala.value
-      if (mojozShouldGenerateDtos.value) {
-       val contents = classBuilder.generateScalaSource(
-        List("package "+mojozDtosPackage.value, "") ++
-          mojozDtosImports.value.map("import "+_)   ++
-          List(""),
-        viewDefs,
-        List("", mapping),
-        allViewDefsMap,
-       )
-       IO.write(file, contents)
-       Some(file)
-      } else None
-    },
+    mojozGenerateDtosScala := Def.uncached(mojozGenerateDtosScalaImpl.value),
 
     mojozSourceGenerators := Def.uncached {
       mojozCompileViews.value.filter(_ => false) ++ // XXX Compile views at this point (no source generation here)
