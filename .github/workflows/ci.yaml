@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         os:   [ubuntu-22.04]   # TODO macos-latest, windows-latest
-        java: [11] #, 17, 21]  # TODO
+        java: [17]
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -16,4 +16,4 @@ jobs:
         java-version: ${{ matrix.java }}
         distribution: 'adopt'
     - name: Compile and test and check version policy
-      run:  sbt clean scripted versionPolicyCheck
+      run:  sbt ++2.12.21 clean scripted ++3.8.4 compile versionPolicyCheck

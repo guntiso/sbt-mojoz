@@ -5,6 +5,7 @@ import org.mojoz.metadata.TableDef
 import sbt.Keys._
 import sbt._
 import sbt.plugins.JvmPlugin
+import sbtcompat.PluginCompat._
 
 
 object MojozGenerateSchemaPlugin extends AutoPlugin {
@@ -24,7 +25,7 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       val projectsWithSchemaSetting = allSettings.filter(_.key.key == mojozGenerateSchemaSqlFiles.key)
         .flatMap(_.key.scope.project.toOption.map(Seq(_)).getOrElse(Seq())).toSet
       val depsWithSetting = dependencies.filter(projectsWithSchemaSetting)
-      mojozGenerateSchemaSqlFiles.all(ScopeFilter(inProjects(depsWithSetting: _*)))
+      mojozGenerateSchemaSqlFiles.all(ScopeFilter(inProjects(depsWithSetting*)))
     }
   }
 
@@ -35,16 +36,16 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
   override val projectSettings = Seq(
     mojozSchemaSqlDirectory     := (Compile / resourceManaged).value,
-    mojozSchemaSqlDbNames       := mojozTableMetadata.value.tableDefs.map(_.db).distinct.sortBy(Option(_) getOrElse ""),
-    mojozSchemaSqlFiles         := mojozSchemaSqlDbNames.value.map { db =>
+    mojozSchemaSqlDbNames       := Def.uncached(mojozTableMetadata.value.tableDefs.map(_.db).distinct.sortBy(Option(_) getOrElse "")),
+    mojozSchemaSqlFiles         := Def.uncached { mojozSchemaSqlDbNames.value.map { db =>
       mojozSchemaSqlDirectory.value / s"db-schema${Option(db).map("-" + _) getOrElse ""}.sql"
-    },
-    mojozSchemaSqlGenerators := {
+    }},
+    mojozSchemaSqlGenerators := Def.uncached {
       val typeDefs = mojozTypeDefs.value
       mojozSchemaSqlDbNames.value.map { db => org.mojoz.metadata.out.DdlGenerator.postgresql(typeDefs = typeDefs) }
     },
 
-    mojozGenerateSchemaSqlFiles := {
+    mojozGenerateSchemaSqlFiles := Def.uncached {
       val sqlFile = mojozDependencyGeneratedSqls.value
       val tableMd = mojozTableMetadata.value
       val dbToTableDefs = tableMd.tableDefs.groupBy(_.db)
@@ -62,9 +63,9 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       }
     },
 
-    mojozSchemaSqlShouldInclude := { _ => true },
+    mojozSchemaSqlShouldInclude := Def.uncached((_: TableDef) => true),
 
-    mojozPrintSchemaSql := {
+    mojozPrintSchemaSql := Def.uncached {
       import sbt.complete.DefaultParsers._
       import org.mojoz.metadata.out.DdlGenerator
       // get the result of parsing
@@ -98,6 +99,6 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
 
     // not exactly source generation, but we want schema to be generated during compilation
     // to disable this 'effect' add to your build - mojozGenerateSchemaSqlFiles := { null }
-    Compile / sourceGenerators += mojozGenerateSchemaSqlFiles.map(_ => Seq()).taskValue
+    Compile / sourceGenerators += mojozGenerateSchemaSqlFiles.map(_ => Seq.empty[File]).taskValue
   )
 }

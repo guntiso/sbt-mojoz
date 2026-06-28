@@ -1,20 +1,42 @@
 import sbt.Keys.organization
 
+def scala212 = "2.12.21"
+def scala3   = "3.8.4"
+
 lazy val root = (project in file("."))
   .enablePlugins(SbtPlugin)
   .settings(
     name := "sbt-mojoz",
     organization := "org.mojoz",
-    scalaVersion := "2.12.21",
+    crossScalaVersions := Seq(scala212, scala3),
+    scalaVersion := scala212,
+    addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
+    (pluginCrossBuild / sbtVersion) := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.12.12"
+        case _      => "2.0.0"
+      }
+    },
+    scripted / scalaVersion := scala212,
+    scriptedSbt := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.12.12"
+        case _      => "2.0.0"
+      }
+    },
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
     ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible,
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
-    javacOptions ++= Seq("-source", "11", "-target", "11", "-Xlint"),
+    pluginCrossBuild / javacOptions ++= {
+      scalaBinaryVersion.value match {
+        case "2.12" => Seq("-release",  "8", "-Xlint")
+        case _      => Seq("-release", "17", "-Xlint")
+      }
+    },
     initialize := {
       val _ = initialize.value
-      val javaVersion = sys.props("java.specification.version")
-      if (javaVersion != "11")
-        sys.error("Java 11 is required for this project. Found " + javaVersion + " instead")
+      val javaVersion = sys.props("java.specification.version").toDouble
+      if (javaVersion != 17)
+        sys.error("Java 17 is required to build this project. Found " + javaVersion + " instead")
     },
     resolvers += "snapshots" at "https://central.sonatype.com/repository/maven-snapshots",
     libraryDependencies ++= Seq(
@@ -72,4 +94,13 @@ lazy val root = (project in file("."))
           <url>https://github.com/mrumkovskis/</url>
         </developer>
       </developers>
+  )
+  .settings(
+    Compile / scalacOptions := {
+      val common = Seq("-unchecked", "-deprecation", "-feature", "-Wconf:cat=unused-nowarn:s")
+      scalaBinaryVersion.value match {
+        case "2.12" => common ++ Seq("-Xsource:3", "-release", "8")
+        case _      => common ++ Seq("-java-output-version",  "17")
+      }
+    },
   )

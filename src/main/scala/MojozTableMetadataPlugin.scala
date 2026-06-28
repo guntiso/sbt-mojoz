@@ -8,6 +8,7 @@ import org.mojoz.querease.{QuereaseMetadata, TresqlMetadata}
 import sbt.Keys.{baseDirectory, resourceDirectories, resourceGenerators, resourceManaged, unmanagedResources}
 import sbt.*
 import sbt.plugins.JvmPlugin
+import sbtcompat.PluginCompat._
 
 object MojozTableMetadataPlugin extends AutoPlugin {
   object autoImport {
@@ -37,38 +38,38 @@ object MojozTableMetadataPlugin extends AutoPlugin {
     mojozMetadataFileFilterPredicate := (f => f.getName.endsWith(".yaml")),
     mojozDbNaming := identity,
 
-    mojozTableMetadataFiles := mojozTableMetadataFolders.value.flatMap { mojozTableMetadataFolder =>
+    mojozTableMetadataFiles := Def.uncached { mojozTableMetadataFolders.value.flatMap { mojozTableMetadataFolder =>
       Path.selectSubpaths(mojozTableMetadataFolder, _.isFile).map {
         case (f, p) => (f, mojozTableMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
-    },
-    mojozRawTableMetadata := mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+    }},
+    mojozRawTableMetadata := Def.uncached(mojozTableMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile)),
 
-    mojozMdConventions :=
+    mojozMdConventions := Def.uncached(
       new MdConventions.SimplePatternMdConventions(mojozResourceLoader((Compile / resourceDirectories).value)),
+    ),
 
-    mojozCustomTypesFile :=
-      ((Compile / unmanagedResources).value ** "mojoz-custom-types.yaml").get.headOption,
+    mojozCustomTypesFile := Def.uncached(
+      ((Compile / unmanagedResources).value ** "mojoz-custom-types.yaml").get().headOption
+    ),
 
-    mojozTypeDefs :=
+    mojozTypeDefs := Def.uncached(
       mojozCustomTypesFile.value
         .map(YamlMd.fromFile)
         .map(new YamlTypeDefLoader(_).typeDefs)
         .map(TypeMetadata.mergeTypeDefs(_, TypeMetadata.defaultTypeDefs))
-        .getOrElse(TypeMetadata.customizedTypeDefs),
+        .getOrElse(TypeMetadata.customizedTypeDefs)),
 
-    mojozDbAliasToDb   := QuereaseMetadata.aliasToDb(
-      MojozPlugin.getMojozResourceClassLoader((Compile / resourceDirectories).value),
-    ),
-    mojozTableMetadata :=
+    mojozDbAliasToDb := Def.uncached(QuereaseMetadata.aliasToDb(mojozResourceLoader((Compile / resourceDirectories).value))),
+    mojozTableMetadata := Def.uncached(
       new TableMetadata(
         new YamlTableDefLoader(mojozRawTableMetadata.value.toList, mojozMdConventions.value, mojozTypeDefs.value).tableDefs,
         mojozDbNaming.value,
         mojozDbAliasToDb.value,
-      ),
+      )),
 
     mojozTresqlTableMetadataFileName := ((Compile / resourceManaged).value / "tresql-table-metadata.yaml").getAbsolutePath,
-    mojozGenerateTresqlTableMetadata := {
+    mojozGenerateTresqlTableMetadata := Def.uncached {
       val file =  new File(mojozTresqlTableMetadataFileName.value)
       val contents = new TresqlMetadata(mojozTableMetadata.value.tableDefs.sortBy(_.name), mojozTypeDefs.value).tableMetadataString
       IO.write(file, contents)

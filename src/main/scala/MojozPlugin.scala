@@ -5,9 +5,10 @@ import org.mojoz.metadata.in.YamlMd
 import org.mojoz.querease.{Querease, QuereaseMetadata}
 import org.mojoz.querease.compiling.ViewCompiler
 import sbt.Def.Classpath
-import sbt.Keys.{streams, *}
+import sbt.Keys.{fileConverter, streams, *}
 import sbt.plugins.JvmPlugin
-import sbt.{Attributed, AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
+import sbt.{AutoPlugin, Compile, Def, File, config, settingKey, taskKey}
+import sbtcompat.PluginCompat._
 
 object MojozPlugin extends AutoPlugin {
   object autoImport {
@@ -72,8 +73,9 @@ object MojozPlugin extends AutoPlugin {
 
   override val projectSettings: Seq[Def.Setting[?]] = Seq(
 
-    mojozResourceClassLoaderFiles :=
-      (Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value),
+    mojozResourceClassLoaderFiles := Def.uncached(
+      (Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value)
+    ),
 
     mojozDtosPackage := "dto",
     mojozDtosImports := Seq(
@@ -82,36 +84,36 @@ object MojozPlugin extends AutoPlugin {
     ),
 
     mojozJobMetadataFolders := Seq(baseDirectory.value / "jobs"),
-    mojozJobMetadataFiles := mojozJobMetadataFolders.value.flatMap { mojozJobMetadataFolder =>
+    mojozJobMetadataFiles := Def.uncached { mojozJobMetadataFolders.value.flatMap { mojozJobMetadataFolder =>
       Path.selectSubpaths(mojozJobMetadataFolder, _.isFile).map {
         case (f, p) => (f, mojozJobMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
-    },
+    }},
 
     mojozRouteMetadataFolders := Seq(baseDirectory.value / "routes"),
-    mojozRouteMetadataFiles := mojozRouteMetadataFolders.value.flatMap { mojozRouteMetadataFolder =>
+    mojozRouteMetadataFiles := Def.uncached { mojozRouteMetadataFolders.value.flatMap { mojozRouteMetadataFolder =>
       Path.selectSubpaths(mojozRouteMetadataFolder, _.isFile).map {
         case (f, p) => (f, mojozRouteMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
-    },
+    }},
 
     mojozViewMetadataFolders := Seq(baseDirectory.value / "views"),
-    mojozViewMetadataFiles := mojozViewMetadataFolders.value.flatMap { mojozViewMetadataFolder =>
+    mojozViewMetadataFiles := Def.uncached { mojozViewMetadataFolders.value.flatMap { mojozViewMetadataFolder =>
       Path.selectSubpaths(mojozViewMetadataFolder, _.isFile).map {
         case (f, p) => (f, mojozViewMetadataFolder.getName + "/" + p.replace('\\', '/'))
       }.filter(f => mojozMetadataFileFilterPredicate.value(f._1))
-    },
+    }},
 
-    mojozMetadataFilesForResources :=
+    mojozMetadataFilesForResources := Def.uncached(
       mojozJobMetadataFiles.value   ++
       mojozRouteMetadataFiles.value ++
       mojozTableMetadataFiles.value ++
-      mojozViewMetadataFiles.value,
+      mojozViewMetadataFiles.value),
 
     mojozMdFilesFileName := ((Compile / resourceManaged).value / "-md-files.txt").getAbsolutePath,
 
     mojozShouldGenerateMdFileList := true,
-    mojozGenerateMdFileList := {
+    mojozGenerateMdFileList := Def.uncached {
       if(mojozShouldGenerateMdFileList.value) {
         val file = new File(mojozMdFilesFileName.value)
         val contents = mojozMetadataFilesForResources.value.map(_._2).toSet.toSeq.sorted.mkString("", "\n", "\n")
@@ -120,29 +122,30 @@ object MojozPlugin extends AutoPlugin {
       } else Seq()
     },
 
-    mojozResourceGenerators :=
+    mojozResourceGenerators := Def.uncached(
       mojozCompileViews.value ++
-      mojozGenerateMdFileList.value,
+      mojozGenerateMdFileList.value),
 
-    mojozRawJobMetadata := mojozJobMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+    mojozRawJobMetadata := Def.uncached(mojozJobMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile)),
 
-    mojozRawRouteMetadata := mojozRouteMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+    mojozRawRouteMetadata := Def.uncached(mojozRouteMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile)),
 
-    mojozRawViewMetadata := mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile),
+    mojozRawViewMetadata := Def.uncached(mojozViewMetadataFiles.value.map(_._1).flatMap(YamlMd.fromFile)),
 
-    mojozRawYamlMetadata := (mojozRawJobMetadata.value ++ mojozRawRouteMetadata.value ++ mojozRawViewMetadata.value).toVector,
+    mojozRawYamlMetadata := Def.uncached(
+      (mojozRawJobMetadata.value ++ mojozRawRouteMetadata.value ++ mojozRawViewMetadata.value).toVector),
 
-    mojozViewMetadata := mojozQuerease.value.viewDefLoader.plainViewDefs,
-    mojozGenerateDtosViewMetadata := mojozViewMetadata.value,
-    mojozGenerateDtosMappingsViewMetadata := mojozViewMetadata.value,
+    mojozViewMetadata := Def.uncached(mojozQuerease.value.viewDefLoader.plainViewDefs),
+    mojozGenerateDtosViewMetadata := Def.uncached(mojozViewMetadata.value),
+    mojozGenerateDtosMappingsViewMetadata := Def.uncached(mojozViewMetadata.value),
 
-    mojozTresqlMacrosClass := {
+    mojozTresqlMacrosClass := Def.uncached {
       val _ = (MojozMacroCompile / mojozMacroCompile).value
       Option(QuereaseMetadata.resolveMacrosClass(MojozPlugin.getMojozResourceClassLoader(mojozResourceClassLoaderFiles.value)))
     },
     mojozShouldCompileViews := true,
     mojozShowFailedViewQuery := false,
-    mojozQuerease :=
+    mojozQuerease := Def.uncached(
       new Querease with ViewCompiler {
         override lazy val aliasToDb           = mojozDbAliasToDb.value
         override lazy val yamlMetadata        = mojozRawYamlMetadata.value
@@ -153,26 +156,26 @@ object MojozPlugin extends AutoPlugin {
         override lazy val resourceClassLoader = MojozPlugin.getMojozResourceClassLoader(mojozResourceClassLoaderFiles.value)
         override lazy val uninheritableExtras = mojozUninheritableExtras.value
         override protected lazy val parserCacheSize = -1 // unlimited cache for compilation
-      },
-    mojozAllCompilerMetadataFiles := {
+      }),
+    mojozAllCompilerMetadataFiles := Def.uncached {
       Seq(
-        ((Compile / unmanagedResources).value ** "*-patterns.txt").get,
+        ((Compile / unmanagedResources).value ** "*-patterns.txt").get(),
         mojozCustomTypesFile.value.toSeq,
         mojozTableMetadataFiles.value.map(_._1),
-        ((Compile / unmanagedResources).value ** "reference.conf").get,
-        ((Compile / unmanagedResources).value ** "tresql-function-signatures*.txt").get,
-        ((Compile / unmanagedResources).value ** "tresql-macros.txt").get,
-        ((Compile / unmanagedResources).value ** "tresql-resources.conf").get,
-        ((Compile / unmanagedResources).value ** "tresql-scala-macro.properties").get,
+        ((Compile / unmanagedResources).value ** "reference.conf").get(),
+        ((Compile / unmanagedResources).value ** "tresql-function-signatures*.txt").get(),
+        ((Compile / unmanagedResources).value ** "tresql-macros.txt").get(),
+        ((Compile / unmanagedResources).value ** "tresql-resources.conf").get(),
+        ((Compile / unmanagedResources).value ** "tresql-scala-macro.properties").get(),
         Seq((MojozMacroCompile / sbtClassDirectory).value / ".mojoz-macro-compile-stamp"),
       ).flatten
     },
-    mojozAllSourceFiles :=
+    mojozAllSourceFiles := Def.uncached(
       mojozAllCompilerMetadataFiles.value ++
       mojozJobMetadataFiles.value.map(_._1) ++
       mojozRouteMetadataFiles.value.map(_._1) ++
-      mojozViewMetadataFiles.value.map(_._1),
-    mojozCompileViews := {
+      mojozViewMetadataFiles.value.map(_._1)),
+    mojozCompileViews := Def.uncached {
       var compilerCacheFileNames: Seq[String] = Nil
       val mojozCompilerCacheFolder = (Compile / resourceManaged).value
       def compileViews(previouslyCompiledQueries: Set[String] = Set.empty): Set[String] = {
@@ -232,10 +235,10 @@ object MojozPlugin extends AutoPlugin {
         .filter(_.exists)
     },
 
-    mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value),
+    mojozScalaGenerator := Def.uncached(new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value)),
     mojozGenerateDtosScalaFileName := "Dtos.scala",
 
-    mojozGenerateDtosMappingsScala := {
+    mojozGenerateDtosMappingsScala := Def.uncached {
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosMappingsViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
@@ -263,7 +266,7 @@ object MojozPlugin extends AutoPlugin {
     },
 
     mojozShouldGenerateDtos := true,
-    mojozGenerateDtosScala := {
+    mojozGenerateDtosScala := Def.uncached {
      if (mojozShouldGenerateDtos.value) {
       val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
       val tableMd = mojozTableMetadata.value
@@ -286,7 +289,7 @@ object MojozPlugin extends AutoPlugin {
      } else None
     },
 
-    mojozSourceGenerators := {
+    mojozSourceGenerators := Def.uncached {
       mojozCompileViews.value.filter(_ => false) ++ // XXX Compile views at this point (no source generation here)
       mojozGenerateDtosScala.value.toSeq
     },
@@ -297,7 +300,7 @@ object MojozPlugin extends AutoPlugin {
 
     Compile / sourceGenerators   += mojozSourceGenerators.taskValue,
 
-    Compile / copyResources := {
+    Compile / copyResources := Def.uncached {
       val taskStreams = streams.value
       val classDir = (Compile / classDirectory).value
       val cacheStore = streams.value.cacheStoreFactory make "copy-resources"
@@ -308,20 +311,20 @@ object MojozPlugin extends AutoPlugin {
       (Compile / copyResources).value ++ mappings
     },
 
-    mojozCompilerResourceFiles := {
+    mojozCompilerResourceFiles := Def.uncached {
       val unmanaged = (Compile / unmanagedResources).value
       Seq(
-        (unmanaged ** "*-patterns.txt").get,
-        (unmanaged ** "reference.conf").get,
-        (unmanaged ** "tresql-function-signatures*.txt").get,
-        (unmanaged ** "tresql-macros.txt").get,
-        (unmanaged ** "tresql-resources.conf").get,
-        (unmanaged ** "tresql-scala-macro.properties").get,
+        (unmanaged ** "*-patterns.txt").get(),
+        (unmanaged ** "reference.conf").get(),
+        (unmanaged ** "tresql-function-signatures*.txt").get(),
+        (unmanaged ** "tresql-macros.txt").get(),
+        (unmanaged ** "tresql-resources.conf").get(),
+        (unmanaged ** "tresql-scala-macro.properties").get(),
         Seq(mojozGenerateTresqlTableMetadata.value),
       ).flatten.distinct
     },
 
-    mojozBeforeCompile := {
+    mojozBeforeCompile := Def.uncached {
       val classDir = (Compile / classDirectory).value
       val resourceDirs = (Compile / resourceDirectories).value
       val cacheStore = streams.value.cacheStoreFactory make "mojoz-before-compile"
@@ -345,12 +348,12 @@ object MojozPlugin extends AutoPlugin {
       dest
     },
 
-    Compile / compile := {
+    Compile / compile := Def.uncached {
       mojozBeforeCompile.value
       (Compile / compile).value
     },
 
-    mojozGeneratedFiles := {
+    mojozGeneratedFiles := Def.uncached {
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
@@ -367,7 +370,8 @@ object MojozPlugin extends AutoPlugin {
         tableMd.tableDefs.map(t => classFilePathFromName("Tables$" + classFileName(t.name)))
     },
 
-    mojozMacroSources := QuereaseMetadata.resolveMacrosClassName(getMojozResourceClassLoader((Compile / resourceDirectories).value))
+    mojozMacroSources := Def.uncached {
+    QuereaseMetadata.resolveMacrosClassName(getMojozResourceClassLoader((Compile / resourceDirectories).value))
      .filter(_ != null)
      .map { className =>
       try {
@@ -376,7 +380,7 @@ object MojozPlugin extends AutoPlugin {
       } catch {
         case _: ClassNotFoundException =>
           val fileName = className.split('.').last + ".scala"
-          val found = (PathFinder((Compile / scalaSource).value) ** fileName).get
+          val found = (PathFinder((Compile / scalaSource).value) ** fileName).get()
           if (found.isEmpty)
             sys.error(s"Neither macro class: $className nor macro source file: $fileName found under ${(Compile / scalaSource).value.getAbsolutePath}")
           else if (found.size > 1)
@@ -384,10 +388,11 @@ object MojozPlugin extends AutoPlugin {
           else
             found
       }
-    }.getOrElse(Nil),
+     }.getOrElse(Nil)
+    },
 
     // sbt tilde must watch changes in yaml files
-    watchSources := {
+    watchSources := Def.uncached {
       watchSources.value ++
       mojozJobMetadataFolders.value.map(WatchSource(_)) ++
       mojozRouteMetadataFolders.value.map(WatchSource(_)) ++
@@ -400,15 +405,15 @@ object MojozPlugin extends AutoPlugin {
       }
     }
   ) ++ inConfig(MojozMacroCompile)(Defaults.compileSettings ++ Seq(
-    sources             := mojozMacroSources.value,
+    sources             := Def.uncached(mojozMacroSources.value),
     classDirectory      := (Compile / classDirectory).value,
-    dependencyClasspath := (Compile / dependencyClasspath).value,
-    sbtClassDirectory   := {
+    dependencyClasspath := Def.uncached((Compile / dependencyClasspath).value),
+    sbtClassDirectory   := Def.uncached {
       val sbtScalaVer = appConfiguration.value.provider.scalaProvider.version()
       val sbtScalaBinVer = sbtScalaVer.split('.').take(2).mkString(".")
       baseDirectory.value / "project" / "target" / s"scala-$sbtScalaBinVer" / s"sbt-${sbtBinaryVersion.value}" / "classes"
     },
-    mojozMacroCompile   := {
+    mojozMacroCompile   := Def.uncached {
       // compile macro sources for tresql scala macro
       compile.value
       // compile macro sources for view compiler which runs no SBT's own scala
@@ -421,8 +426,9 @@ object MojozPlugin extends AutoPlugin {
       )
       val log = streams.value.log // evaluate streams.value outside of if condition so it does not give warning
       if (needsCompile) {
+        implicit val conv: xsbti.FileConverter = fileConverter.value
         val scalaProvider = appConfiguration.value.provider.scalaProvider
-        val sbtDepClasspath = Attributed.blankSeq(MojozPlugin.buildClasspath)
+        val sbtDepClasspath = toAttributedFiles(MojozPlugin.buildClasspath)
         MojozPlugin.runScalaCompiler(
           srcs,
           sbtClsDir,
@@ -431,6 +437,7 @@ object MojozPlugin extends AutoPlugin {
           scalaProvider.version(),
           javaHome.value,
           log,
+          conv,
         )
         IO.touch(stampFile)
       }
@@ -445,6 +452,7 @@ object MojozPlugin extends AutoPlugin {
     scalaVersion: String,
     javaHome: Option[File],
     log: sbt.util.Logger,
+    fileConverter: xsbti.FileConverter,
   ): Unit = {
     if (sources.isEmpty) return
     destinationDirectory.mkdirs()
@@ -453,7 +461,8 @@ object MojozPlugin extends AutoPlugin {
       .getOrElse(file(sys.props("java.home")) / "bin" / "java")
       .getAbsolutePath
     val compilerCp = scalaJars.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
-    val projectCp  = classpath.map(_.data.getAbsolutePath).mkString(java.io.File.pathSeparator)
+    implicit val conv: xsbti.FileConverter = fileConverter
+    val projectCp  = toFiles(classpath).map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
     val cmd = Seq(
       javaExe,
       "-cp", compilerCp,
