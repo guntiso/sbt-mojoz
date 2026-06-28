@@ -50,13 +50,13 @@ object MojozGenerateSchemaPlugin extends AutoPlugin {
       val tableMd = mojozTableMetadata.value
       val dbToTableDefs = tableMd.tableDefs.groupBy(_.db)
       val shouldInclude = mojozSchemaSqlShouldInclude.value
-      (mojozSchemaSqlDbNames.value, mojozSchemaSqlFiles.value, mojozSchemaSqlGenerators.value).zipped.toList
+      mojozSchemaSqlDbNames.value.zip(mojozSchemaSqlFiles.value).zip(mojozSchemaSqlGenerators.value)
       .filter {
-        case (db, schemaFile, sqlGenerator) =>
+        case ((_, schemaFile), sqlGenerator) =>
           schemaFile != null && sqlGenerator != null
       }
       .map {
-        case (db, schemaFile, sqlGenerator) =>
+        case ((db, schemaFile), sqlGenerator) =>
           val allTables = dbToTableDefs(db).map(_.name).sorted
           IO.write(schemaFile, sqlGenerator.schema(allTables.map(tableMd.tableDef(_, db)).filter(shouldInclude)))
           schemaFile

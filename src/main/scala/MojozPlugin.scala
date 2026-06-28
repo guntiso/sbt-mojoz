@@ -43,8 +43,8 @@ object MojozPlugin extends AutoPlugin {
     val mojozSourceGenerators = taskKey[Seq[File]]("All mojoz source generation tasks")
     val mojozAllSourceFiles = taskKey[Seq[File]]("All mojoz source files - for source watch and view compilation")
     val mojozAllCompilerMetadataFiles = taskKey[Seq[File]]("All compiler metadata files - for mojozCompileViews cache invalidation. Customize if mojozTresqlMacrosClass is customized")
-    val mojozTresqlMacrosClass = taskKey[Option[Class[_]]] ("Macros class for view compilation. Defaults to org.mojoz.querease.QuereaseMacros. Customization rarely needed - use tresql-macros.txt instead")
-    val mojozQuerease = taskKey[Querease with ViewCompiler]("Creates an instance of Querease for view compilation etc.")
+    val mojozTresqlMacrosClass = taskKey[Option[Class[?]]] ("Macros class for view compilation. Defaults to org.mojoz.querease.QuereaseMacros. Customization rarely needed - use tresql-macros.txt instead")
+    val mojozQuerease = taskKey[Querease & ViewCompiler]("Creates an instance of Querease for view compilation etc.")
     val mojozGenerateDtosScalaFileName = settingKey[String]("File name where dtos are stored, default  Dtos.scala")
     val mojozGenerateDtosViewMetadata = taskKey[List[ViewDef]]("View metadata for dtos generation")
     val mojozGenerateDtosMappingsViewMetadata = taskKey[List[ViewDef]]("View metadata for dtos mappings generation")
@@ -203,19 +203,19 @@ object MojozPlugin extends AutoPlugin {
       val allSourceFiles = mojozAllSourceFiles.value
       val compilerMetadataFiles = mojozAllCompilerMetadataFiles.value
 
-      lazy val compiledQueriesCacheStore  = streams.value.cacheStoreFactory make "mojoz-compiled-queries"
+      lazy val compiledQueriesCacheStore  = streams.value.cacheStoreFactory.make("mojoz-compiled-queries")
       lazy val cachedCompileViewsQ        = Tracked.lastOutput[Boolean, Set[String]](compiledQueriesCacheStore) {
         case (_, None) /* no previous output */        => compileViews()
         case (true, _) /* compiler metadata changed */ => compileViews()
         case (_, Some(previouslyCompiledQueries))      => compileViews(previouslyCompiledQueries)
       }
 
-      lazy val compilerMetadataCacheStore = streams.value.cacheStoreFactory make "mojoz-compiler-metadata-file-hashes"
+      lazy val compilerMetadataCacheStore = streams.value.cacheStoreFactory.make("mojoz-compiler-metadata-file-hashes")
       lazy val cachedCompileViewsM        = Tracked.inputChanged[Seq[HashFileInfo], Any](compilerMetadataCacheStore) {
         case (isCompilerMetadataChanged: Boolean, _)   => cachedCompileViewsQ(isCompilerMetadataChanged)
       }
 
-      lazy val allSourcesCacheStore       = streams.value.cacheStoreFactory make "mojoz-all-source-file-hashes"
+      lazy val allSourcesCacheStore       = streams.value.cacheStoreFactory.make("mojoz-all-source-file-hashes")
       lazy val cachedCompileViews         = Tracked.inputChanged[Seq[HashFileInfo], Any](allSourcesCacheStore) {
         case (true, _)  => cachedCompileViewsM(compilerMetadataFiles.map(FileInfo.hash(_)))
         case (false, _) =>
@@ -224,7 +224,7 @@ object MojozPlugin extends AutoPlugin {
       if (mojozShouldCompileViews.value)
         cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
 
-      lazy val cacheFilenamesCacheStore   = streams.value.cacheStoreFactory make "mojoz-compiler-cache-file-names"
+      lazy val cacheFilenamesCacheStore   = streams.value.cacheStoreFactory.make("mojoz-compiler-cache-file-names")
       lazy val cachedCacheFileNames       = Tracked.lastOutput[Set[String], Set[String]](compiledQueriesCacheStore) {
         case (fileNames, previousFileNamesOpt) => fileNames ++ previousFileNamesOpt.getOrElse(Set.empty)
       }
@@ -267,26 +267,23 @@ object MojozPlugin extends AutoPlugin {
 
     mojozShouldGenerateDtos := true,
     mojozGenerateDtosScala := Def.uncached {
-     if (mojozShouldGenerateDtos.value) {
       val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
-      val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
       val allViewDefsMap = mojozViewMetadata.value.map(v => v.name -> v).toMap
-
       val classBuilder = mojozScalaGenerator.value
-
       val mapping = mojozGenerateDtosMappingsScala.value
-      val contents = classBuilder.generateScalaSource(
+      if (mojozShouldGenerateDtos.value) {
+       val contents = classBuilder.generateScalaSource(
         List("package "+mojozDtosPackage.value, "") ++
           mojozDtosImports.value.map("import "+_)   ++
           List(""),
         viewDefs,
         List("", mapping),
         allViewDefsMap,
-      )
-      IO.write(file, contents)
-      Some(file)
-     } else None
+       )
+       IO.write(file, contents)
+       Some(file)
+      } else None
     },
 
     mojozSourceGenerators := Def.uncached {
@@ -303,7 +300,7 @@ object MojozPlugin extends AutoPlugin {
     Compile / copyResources := Def.uncached {
       val taskStreams = streams.value
       val classDir = (Compile / classDirectory).value
-      val cacheStore = streams.value.cacheStoreFactory make "copy-resources"
+      val cacheStore = streams.value.cacheStoreFactory.make("copy-resources")
       val mappings = mojozMetadataFilesForResources.value.map(f => (f._1, classDir / f._2))
 
       taskStreams.log.debug("result" + mappings.mkString("\n\t","\n\t",""))
@@ -327,7 +324,7 @@ object MojozPlugin extends AutoPlugin {
     mojozBeforeCompile := Def.uncached {
       val classDir = (Compile / classDirectory).value
       val resourceDirs = (Compile / resourceDirectories).value
-      val cacheStore = streams.value.cacheStoreFactory make "mojoz-before-compile"
+      val cacheStore = streams.value.cacheStoreFactory.make("mojoz-before-compile")
       val mappings = mojozCompilerResourceFiles.value.flatMap { src =>
         resourceDirs.flatMap(rd => IO.relativize(rd, src)).headOption.map(rel => (src, classDir / rel))
       }
@@ -357,7 +354,7 @@ object MojozPlugin extends AutoPlugin {
       val tableMd = mojozTableMetadata.value
       val viewDefs = mojozGenerateDtosViewMetadata.value
       val classBuilder = mojozScalaGenerator.value
-      val packagePath = mojozDtosPackage.value.replaceAllLiterally(".", "/")
+      val packagePath = mojozDtosPackage.value.replace(".", "/")
       def classFileName(name: String) =
         // TODO classFileNameFromName
         classBuilder.scalaClassName(name)

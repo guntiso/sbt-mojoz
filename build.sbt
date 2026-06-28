@@ -97,9 +97,9 @@ lazy val root = (project in file("."))
   )
   .settings(
     Compile / scalacOptions := {
-      val common = Seq("-unchecked", "-deprecation", "-feature", "-Wconf:cat=unused-nowarn:s")
+      val common = Seq("-unchecked", "-deprecation", "-feature")
       scalaBinaryVersion.value match {
-        case "2.12" => common ++ Seq("-Xsource:3", "-release", "8")
+        case "2.12" => common ++ Seq("-Xsource:3", "-release", "8", "-Wconf:cat=unused-nowarn:s")
         case _      => common ++ Seq("-java-output-version",  "17")
       }
     },
