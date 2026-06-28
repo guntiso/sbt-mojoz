@@ -6,3 +6,6 @@ $ absent target/scala-2.12/classes/sbtmojoz/Test.class
 > compile
 $ exists target/scala-2.12/classes/sbtmojoz/macros/Macros.class
 $ exists target/scala-2.12/classes/sbtmojoz/Test.class
+# tresql interpolator macros and function signatures from resources
+$ exists target/scala-2.12/classes/tresql-macros.txt
+$ exists target/scala-2.12/classes/tresql-function-signatures.txt
