@@ -302,12 +302,31 @@ object MojozPlugin extends AutoPlugin {
     Compile / copyResources := Def.uncached {
       val taskStreams = streams.value
       val classDir = (Compile / classDirectory).value
-      val cacheStore = streams.value.cacheStoreFactory.make("copy-resources")
-      val mappings = mojozMetadataFilesForResources.value.map(f => (f._1, classDir / f._2))
+      if (mojozShouldGenerateMdFileList.value) {
+        val _ = mojozGenerateMdFileList.value
+      }
+      def filesUnder(dir: File): Seq[File] =
+        if (!dir.exists) Nil
+        else dir.listFiles().toSeq.flatMap(f => if (f.isDirectory) filesUnder(f) else Seq(f))
+      val resourceCopyMappings = {
+        val resourceManagedDir = (Compile / resourceManaged).value
+        val managedMappings = filesUnder(resourceManagedDir).flatMap { f =>
+          IO.relativize(resourceManagedDir, f).map(rel => (f, classDir / rel))
+        }
+        val unmanagedMappings = (Compile / unmanagedResources).value.flatMap { f =>
+          (Compile / resourceDirectories).value.flatMap(rd => IO.relativize(rd, f)).headOption.map(rel => (f, classDir / rel))
+        }
+        managedMappings ++ unmanagedMappings
+      }
+      val metaMappings = mojozMetadataFilesForResources.value.map(f => (f._1, classDir / f._2))
+      val mappings = resourceCopyMappings ++ metaMappings
 
       taskStreams.log.debug("result" + mappings.mkString("\n\t","\n\t",""))
-      Sync.sync(cacheStore)( mappings )
-      (Compile / copyResources).value ++ mappings
+      mappings.foreach { case (src, dest) =>
+        IO.createDirectory(dest.getParentFile)
+        IO.copyFile(src, dest, preserveLastModified = true)
+      }
+      mappings
     },
 
     mojozCompilerResourceFiles := Def.uncached {

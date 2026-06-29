@@ -1,18 +1,19 @@
 # build project
 > clean
-> package
+> compile
+> Compile/copyResources
 
 # check resources are created/copied to target
-$ exists target/scala-2.12/classes/tables/foo.yaml
-$ exists target/scala-2.12/classes/views/foo.yaml
-$ exists target/scala-2.12/resource_managed/main/-md-files.txt
-$ exists target/scala-2.12/classes/-md-files.txt
+$ exists target/**/classes/tables/foo.yaml
+$ exists target/**/classes/views/foo.yaml
+$ exists target/**/resource_managed/**/-md-files.txt
+$ exists target/**/classes/-md-files.txt
 
 # check Dtos.scala is created
-$ exists target/scala-2.12/src_managed/main/Dtos.scala
+$ exists target/**/src_managed/main/Dtos.scala
 # check dto classes are defined
-$ exists target/scala-2.12/classes/sample/Foo.class
-$ exists target/scala-2.12/classes/sample/Tables$Foo.class
+$ exists target/**/classes/sample/Foo.class
+$ exists target/**/classes/sample/Tables$Foo.class
 
 # ========= update views and tables and rebuild v2 =========
 
@@ -34,25 +35,26 @@ $ exists views/bar.yaml
 
 # re-build project
 > clean
-> package
+> compile
+> Compile/copyResources
 
 # check resources are created/copied to target
-$ exists target/scala-2.12/classes/tables/foo.yaml
-$ exists target/scala-2.12/classes/tables/bar.yaml
-$ exists target/scala-2.12/classes/views/foo.yaml
-$ exists target/scala-2.12/classes/views/bar.yaml
-$ exists target/scala-2.12/resource_managed/main/-md-files.txt
-$ exists target/scala-2.12/classes/-md-files.txt
+$ exists target/**/classes/tables/foo.yaml
+$ exists target/**/classes/tables/bar.yaml
+$ exists target/**/classes/views/foo.yaml
+$ exists target/**/classes/views/bar.yaml
+$ exists target/**/resource_managed/**/-md-files.txt
+$ exists target/**/classes/-md-files.txt
 
 # check Dtos.scala is created
-$ exists target/scala-2.12/src_managed/main/Dtos.scala
+$ exists target/**/src_managed/main/Dtos.scala
 # check dto classes are defined
-$ exists target/scala-2.12/classes/sample/Foo.class
-$ exists target/scala-2.12/classes/sample/Foo2.class
-$ exists target/scala-2.12/classes/sample/Bar.class
-$ exists target/scala-2.12/classes/sample/Tables$Foo.class
-$ exists target/scala-2.12/classes/sample/Tables$Foo2.class
-$ exists target/scala-2.12/classes/sample/Tables$Bar.class
+$ exists target/**/classes/sample/Foo.class
+$ exists target/**/classes/sample/Foo2.class
+$ exists target/**/classes/sample/Bar.class
+$ exists target/**/classes/sample/Tables$Foo.class
+$ exists target/**/classes/sample/Tables$Foo2.class
+$ exists target/**/classes/sample/Tables$Bar.class
 
 # ========= revert views and tables and rebuild v3 =========
 
@@ -68,23 +70,23 @@ $ absent views/bar.yaml
 
 # re-build project
 > clean
-> package
+> compile
+> Compile/copyResources
 
 # check resources are created/copied to target
-$ exists target/scala-2.12/classes/tables/foo.yaml
-$ absent target/scala-2.12/classes/tables/bar.yaml
-$ exists target/scala-2.12/classes/views/foo.yaml
-$ absent target/scala-2.12/classes/views/bar.yaml
-$ exists target/scala-2.12/resource_managed/main/-md-files.txt
-$ exists target/scala-2.12/classes/-md-files.txt
+$ exists target/**/classes/tables/foo.yaml
+$ absent target/**/classes/tables/bar.yaml
+$ exists target/**/classes/views/foo.yaml
+$ absent target/**/classes/views/bar.yaml
+$ exists target/**/resource_managed/**/-md-files.txt
+$ exists target/**/classes/-md-files.txt
 
 # check Dtos.scala is created
-$ exists target/scala-2.12/src_managed/main/Dtos.scala
+$ exists target/**/src_managed/main/Dtos.scala
 # check dto classes are defined
-$ exists target/scala-2.12/classes/sample/Foo.class
-$ absent target/scala-2.12/classes/sample/Foo2.class
-$ absent target/scala-2.12/classes/sample/Bar.class
-$ exists target/scala-2.12/classes/sample/Tables$Foo.class
-$ absent target/scala-2.12/classes/sample/Tables$Foo2.class
-$ absent target/scala-2.12/classes/sample/Tables$Bar.class
-
+$ exists target/**/classes/sample/Foo.class
+$ absent target/**/classes/sample/Foo2.class
+$ absent target/**/classes/sample/Bar.class
+$ exists target/**/classes/sample/Tables$Foo.class
+$ absent target/**/classes/sample/Tables$Foo2.class
+$ absent target/**/classes/sample/Tables$Bar.class

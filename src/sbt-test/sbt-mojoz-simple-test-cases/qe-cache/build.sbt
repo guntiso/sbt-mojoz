@@ -1,3 +1,5 @@
+import sbtcompat.PluginCompat._
+
 name := "sbt-mojoz-test"
 
 organization := "org.mojoz"
@@ -5,16 +7,17 @@ organization := "org.mojoz"
 version := "0.1"
 
 scalaVersion := "2.12.21"
+exportJars := false
 
 lazy val root = (project in file(".")).enablePlugins(MojozPlugin, MojozGenerateSchemaPlugin)
 
-mojozMdConventions := org.mojoz.metadata.io.MdConventions
+mojozMdConventions := Def.uncached(org.mojoz.metadata.io.MdConventions)
 
 mojozDtosImports := Seq("sbtmojoz.test._")
 
 mojozSchemaSqlDirectory := file("db/creation")
 
-mojozQuerease :=
+mojozQuerease := Def.uncached(
   new org.mojoz.querease.Querease with org.mojoz.querease.compiling.ViewCompiler {
     import org.mojoz.MojozPlugin
     override lazy val yamlMetadata        = mojozRawYamlMetadata.value
@@ -32,4 +35,5 @@ mojozQuerease :=
       val (compiledQueries, _) = super.compileAllQueries(previouslyCompiledQueries, showFailedViewQuery, log)
       (compiledQueries, Map("my-qe-cache.txt" -> "[my-qe-cache-body]".getBytes("UTF-8")))
     }
-  },
+  }
+)

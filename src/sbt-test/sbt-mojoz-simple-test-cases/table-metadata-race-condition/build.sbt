@@ -1,39 +1,46 @@
+import sbtcompat.PluginCompat._
+
 
 lazy val commonSettings = Seq(
   organization := "org.mojoz",
   version := "0.1",
   scalaVersion := "2.12.21",
-  mojozMdConventions := org.mojoz.metadata.io.MdConventions,
+  exportJars := false,
+  mojozMdConventions := Def.uncached(org.mojoz.metadata.io.MdConventions),
   mojozDtosImports := Seq("sbtmojoz.test._"),
-  mojozScalaGenerator := new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
+  mojozScalaGenerator := Def.uncached(new org.mojoz.querease.ScalaDtoGenerator(mojozQuerease.value) {
     override def scalaClassName(name: String): String =
       name.split("[_\\-\\.]+").toList.map(_.toLowerCase.capitalize).mkString
-  },
+  }),
 )
 
-lazy val common = project in file("common")
+lazy val common = (project in file("common"))
+  .settings(
+    scalaVersion := "2.12.21",
+    exportJars := false,
+  )
 
 lazy val foo = (project in file("foo"))
   .dependsOn(common)
   .enablePlugins(MojozPlugin)
-  .settings(commonSettings: _*)
+  .settings(commonSettings*)
 
 lazy val bar = (project in file("bar"))
   .dependsOn(common)
   .enablePlugins(MojozPlugin)
-  .settings(commonSettings: _*)
+  .settings(commonSettings*)
 
 lazy val baz = (project in file("baz"))
   .dependsOn(common)
   .enablePlugins(MojozPlugin)
-  .settings(commonSettings: _*)
+  .settings(commonSettings*)
 
 
 val tablecount = 100
 val joincount = 10
 
 
-TaskKey[Unit]("buildsource") := {
+TaskKey[Unit]("buildsource") := Def.uncached {
   def writeFiles(project: String) = {
     import java.io._
     val pw = new PrintWriter(new File(s"$project/tables/$project.yaml" ))
@@ -51,7 +58,7 @@ TaskKey[Unit]("buildsource") := {
 
     import java.io._
     val pw2 = new PrintWriter(new File(s"$project/views/$project.yaml" ))
-    (0 until tablecount).foreach { i: Int =>
+    (0 until tablecount).foreach { i =>
      pw2.write(
       s"""
          |name:    $project$i
@@ -60,7 +67,7 @@ TaskKey[Unit]("buildsource") := {
          |joins:
          |""".stripMargin)
      
-        (0 until joincount).foreach { ii: Int =>
+        (0 until joincount).foreach { ii =>
           pw2.write(s"- ttt[ttt.id = t$ii.id] $project$ii t$ii\n")
         }
 

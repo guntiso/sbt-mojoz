@@ -1,3 +1,5 @@
+import sbtcompat.PluginCompat._
+
 name := "sbt-mojoz-test"
 
 organization := "org.mojoz"
@@ -5,6 +7,7 @@ organization := "org.mojoz"
 version := "0.1"
 
 scalaVersion := "2.12.21"
+exportJars := false
 
 lazy val root = (project in file(".")).enablePlugins(MojozPlugin, MojozGenerateSchemaPlugin)
 
@@ -18,7 +21,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.4.0" % "provided",
 )
 
-mojozMdConventions := org.mojoz.metadata.io.MdConventions
+mojozMdConventions := Def.uncached(org.mojoz.metadata.io.MdConventions)
 
 mojozDtosImports := Seq("sbtmojoz.test._")
 
