@@ -71,6 +71,15 @@ object MojozPlugin extends AutoPlugin {
   import sbt.*
   import sbt.util.FileInfo
 
+  private def mojozGenerateMdFileListImpl: Def.Initialize[Task[Seq[File]]] = Def.taskIf {
+    if (mojozShouldGenerateMdFileList.value) {
+      val file = new File(mojozMdFilesFileName.value)
+      val contents = mojozMetadataFilesForResources.value.map(_._2).toSet.toSeq.sorted.mkString("", "\n", "\n")
+      IO.write(file, contents)
+      Seq(file)
+    } else Seq()
+  }
+
   private def mojozGenerateDtosScalaImpl: Def.Initialize[Task[Option[File]]] = Def.taskIf {
     if (mojozShouldGenerateDtos.value) {
       val file = (Compile / sourceManaged).value / mojozGenerateDtosScalaFileName.value
@@ -133,14 +142,7 @@ object MojozPlugin extends AutoPlugin {
     mojozMdFilesFileName := ((Compile / resourceManaged).value / "-md-files.txt").getAbsolutePath,
 
     mojozShouldGenerateMdFileList := true,
-    mojozGenerateMdFileList := Def.uncached {
-      if(mojozShouldGenerateMdFileList.value) {
-        val file = new File(mojozMdFilesFileName.value)
-        val contents = mojozMetadataFilesForResources.value.map(_._2).toSet.toSeq.sorted.mkString("", "\n", "\n")
-        IO.write(file, contents)
-        Seq(file)
-      } else Seq()
-    },
+    mojozGenerateMdFileList := Def.uncached(mojozGenerateMdFileListImpl.value),
 
     mojozResourceGenerators := Def.uncached(
       mojozCompileViews.value ++
@@ -241,7 +243,8 @@ object MojozPlugin extends AutoPlugin {
         case (false, _) =>
       }
 
-      if (mojozShouldCompileViews.value)
+      val shouldCompileViews = mojozShouldCompileViews.value
+      if (shouldCompileViews)
         cachedCompileViews(allSourceFiles.map(FileInfo.hash(_)))
 
       lazy val cacheFilenamesCacheStore   = streams.value.cacheStoreFactory.make("mojoz-compiler-cache-file-names")
@@ -302,9 +305,7 @@ object MojozPlugin extends AutoPlugin {
     Compile / copyResources := Def.uncached {
       val taskStreams = streams.value
       val classDir = (Compile / classDirectory).value
-      if (mojozShouldGenerateMdFileList.value) {
-        val _ = mojozGenerateMdFileList.value
-      }
+      val _ = mojozGenerateMdFileList.value
       def filesUnder(dir: File): Seq[File] =
         if (!dir.exists) Nil
         else dir.listFiles().toSeq.flatMap(f => if (f.isDirectory) filesUnder(f) else Seq(f))
@@ -351,14 +352,14 @@ object MojozPlugin extends AutoPlugin {
       }
       Sync.sync(cacheStore)(mappings)
 
+      val macrosClassNameOpt = Option(mojozTresqlMacrosClass.value.orNull).map { c =>
+        val n = c.getName
+        if (n.endsWith("$")) n
+        else try { c.getField("MODULE$"); n + "$" }
+        catch { case _: NoSuchFieldException => n }
+      }
       val dest = classDir / "tresql-scala-macro.properties"
       if (!dest.exists) {
-        val macrosClassNameOpt = Option(mojozTresqlMacrosClass.value.orNull).map { c =>
-          val n = c.getName
-          if (n.endsWith("$")) n
-          else try { c.getField("MODULE$"); n + "$" }
-          catch { case _: NoSuchFieldException => n }
-        }
         val lines = Seq("metadata_factory_class = org.mojoz.querease.TresqlMetadataFactory") ++
           macrosClassNameOpt.map(n => s"macros_class           = $n")
         IO.write(dest, lines.mkString("", "\n", "\n"))
@@ -442,16 +443,17 @@ object MojozPlugin extends AutoPlugin {
         !stampFile.exists() ||
         srcs.exists(_.lastModified() > stampFile.lastModified())
       )
-      val log = streams.value.log // evaluate streams.value outside of if condition so it does not give warning
+      val log = streams.value.log
+      implicit val conv: xsbti.FileConverter = fileConverter.value
+      val scalaInst = (Compile / scalaInstance).value
+      val macroClasspath = toFiles(dependencyClasspath.value) ++ scalaInst.libraryJars.toVector
+      val compilerJars = scalaInst.allJars.toIndexedSeq
       if (needsCompile) {
-        implicit val conv: xsbti.FileConverter = fileConverter.value
-        val scalaInst = (Compile / scalaInstance).value
-        val macroClasspath = toFiles(dependencyClasspath.value) ++ scalaInst.libraryJars
         MojozPlugin.runScalaCompiler(
           srcs,
           sbtClsDir,
           macroClasspath,
-          scalaInst.allJars,
+          compilerJars,
           scalaInst.actualVersion,
           javaHome.value,
           log,

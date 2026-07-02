@@ -26,12 +26,6 @@ lazy val root = (project in file("."))
     },
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
     ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible,
-    pluginCrossBuild / javacOptions ++= {
-      scalaBinaryVersion.value match {
-        case "2.12" => Seq("-release",  "8", "-Xlint")
-        case _      => Seq("-release", "17", "-Xlint")
-      }
-    },
     initialize := {
       val _ = initialize.value
       val javaVersion = sys.props("java.specification.version").toDouble
@@ -41,9 +35,9 @@ lazy val root = (project in file("."))
     resolvers += "snapshots" at "https://central.sonatype.com/repository/maven-snapshots",
     libraryDependencies ++= Seq(
       "org.mojoz"               %% "mojoz"                      % "7.1.1",
-      "org.mojoz"               %% "querease"                   % "10.1.0-SNAPSHOT"  exclude(
+      ("org.mojoz"               %% "querease"                   % "10.1.0-SNAPSHOT").exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-      "org.tresql"              %% "tresql"                     % "13.4.0" exclude(
+      ("org.tresql"              %% "tresql"                     % "13.4.0").exclude(
       "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
       "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.4.0" % "provided",
     ),
