@@ -434,7 +434,7 @@ object MojozPlugin extends AutoPlugin {
     mojozMacroCompile   := Def.uncached {
       // compile macro sources for tresql scala macro
       compile.value
-      // compile macro sources for view compiler which runs no SBT's own scala
+      // compile macro sources for view compiler classpath (loaded via URLClassLoader, not sbt classloader)
       val srcs      = sources.value
       val sbtClsDir = sbtClassDirectory.value
       val stampFile = sbtClsDir / ".mojoz-macro-compile-stamp"
@@ -445,17 +445,16 @@ object MojozPlugin extends AutoPlugin {
       val log = streams.value.log // evaluate streams.value outside of if condition so it does not give warning
       if (needsCompile) {
         implicit val conv: xsbti.FileConverter = fileConverter.value
-        val scalaProvider = appConfiguration.value.provider.scalaProvider
-        val sbtDepClasspath = toAttributedFiles(MojozPlugin.buildClasspath)
+        val scalaInst = (Compile / scalaInstance).value
+        val macroClasspath = toFiles(dependencyClasspath.value) ++ scalaInst.libraryJars
         MojozPlugin.runScalaCompiler(
           srcs,
           sbtClsDir,
-          sbtDepClasspath,
-          scalaProvider.jars().toSeq,
-          scalaProvider.version(),
+          macroClasspath,
+          scalaInst.allJars,
+          scalaInst.actualVersion,
           javaHome.value,
           log,
-          conv,
         )
         IO.touch(stampFile)
       }
@@ -465,12 +464,11 @@ object MojozPlugin extends AutoPlugin {
   def runScalaCompiler(
     sources: Seq[File],
     destinationDirectory: File,
-    classpath: Classpath,
+    classpath: Seq[File],
     scalaJars: Seq[File],
     scalaVersion: String,
     javaHome: Option[File],
     log: sbt.util.Logger,
-    fileConverter: xsbti.FileConverter,
   ): Unit = {
     if (sources.isEmpty) return
     destinationDirectory.mkdirs()
@@ -479,8 +477,7 @@ object MojozPlugin extends AutoPlugin {
       .getOrElse(file(sys.props("java.home")) / "bin" / "java")
       .getAbsolutePath
     val compilerCp = scalaJars.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
-    implicit val conv: xsbti.FileConverter = fileConverter
-    val projectCp  = toFiles(classpath).map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
+    val projectCp  = classpath.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
     val cmd = Seq(
       javaExe,
       "-cp", compilerCp,
