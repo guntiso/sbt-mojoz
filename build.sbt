@@ -14,14 +14,14 @@ lazy val root = (project in file("."))
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.12.12"
-        case _      => "2.0.0"
+        case _      => "2.0.1"
       }
     },
     scripted / scalaVersion := scala212,
     scriptedSbt := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.12.12"
-        case _      => "2.0.0"
+        case _      => "2.0.1"
       }
     },
     ThisBuild / sbt.Keys.versionScheme := Some("semver-spec"),
