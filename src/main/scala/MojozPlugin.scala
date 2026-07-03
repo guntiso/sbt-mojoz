@@ -59,7 +59,7 @@ object MojozPlugin extends AutoPlugin {
 
     lazy val MojozMacroCompile = config("macro-compile").extend(Compile)
     lazy val mojozMacroSources = taskKey[Seq[File]]("Macro source files")
-    val mojozMacroCompile = taskKey[Unit]("Compiles Scala macro sources using the SBT's scala compiler as a Java subprocess and project's scalaVersion Scala compiler")
+    val mojozMacroCompile = taskKey[Unit]("Compiles Scala macro sources for view compilation; Scala 3 on sbt 1 also recompiles via sbt's Scala 2 compiler subprocess")
     val sbtClassDirectory = taskKey[File]("SBT's directory of compiled classes, i.e. project/target/...")
   }
 
@@ -102,9 +102,16 @@ object MojozPlugin extends AutoPlugin {
 
   override val projectSettings: Seq[Def.Setting[?]] = Seq(
 
-    mojozResourceClassLoaderFiles := Def.uncached(
-      (Compile / resourceDirectories).value ++ Seq((MojozMacroCompile / sbtClassDirectory).value)
-    ),
+    mojozResourceClassLoaderFiles := Def.uncached {
+      val projectScala    = (Compile / scalaVersion).value
+      val sbtScala        = appConfiguration.value.provider.scalaProvider.version()
+      val sbtClassDir     = (MojozMacroCompile / sbtClassDirectory).value
+      val compileClassDir = (Compile / classDirectory).value
+      val macroClassDir   =
+        if (MojozPlugin.macroNeedsSubprocess(projectScala, sbtScala)) sbtClassDir
+        else compileClassDir
+      (Compile / resourceDirectories).value ++ Seq(macroClassDir)
+    },
 
     mojozDtosPackage := "dto",
     mojozDtosImports := Seq(
@@ -180,6 +187,13 @@ object MojozPlugin extends AutoPlugin {
         override protected lazy val parserCacheSize = -1 // unlimited cache for compilation
       }),
     mojozAllCompilerMetadataFiles := Def.uncached {
+      val projectScala  = (Compile / scalaVersion).value
+      val sbtScala      = appConfiguration.value.provider.scalaProvider.version()
+      val sbtClassDir   = (MojozMacroCompile / sbtClassDirectory).value
+      val subprocessStamp =
+        if (MojozPlugin.macroNeedsSubprocess(projectScala, sbtScala))
+          Seq(sbtClassDir / ".mojoz-macro-compile-stamp")
+        else Nil
       Seq(
         ((Compile / unmanagedResources).value ** "*-patterns.txt").get(),
         mojozCustomTypesFile.value.toSeq,
@@ -189,7 +203,7 @@ object MojozPlugin extends AutoPlugin {
         ((Compile / unmanagedResources).value ** "tresql-macros.txt").get(),
         ((Compile / unmanagedResources).value ** "tresql-resources.conf").get(),
         ((Compile / unmanagedResources).value ** "tresql-scala-macro.properties").get(),
-        Seq((MojozMacroCompile / sbtClassDirectory).value / ".mojoz-macro-compile-stamp"),
+        subprocessStamp,
       ).flatten
     },
     mojozAllSourceFiles := Def.uncached(
@@ -433,35 +447,41 @@ object MojozPlugin extends AutoPlugin {
       baseDirectory.value / "project" / "target" / s"scala-$sbtScalaBinVer" / s"sbt-${sbtBinaryVersion.value}" / "classes"
     },
     mojozMacroCompile   := Def.uncached {
-      // compile macro sources for tresql scala macro
+      // compile macro sources for tresql scala macro into project classDirectory
       compile.value
-      // compile macro sources for view compiler classpath (loaded via URLClassLoader, not sbt classloader)
-      val srcs      = sources.value
-      val sbtClsDir = sbtClassDirectory.value
-      val stampFile = sbtClsDir / ".mojoz-macro-compile-stamp"
-      val needsCompile = srcs.nonEmpty && (
-        !stampFile.exists() ||
-        srcs.exists(_.lastModified() > stampFile.lastModified())
-      )
-      val log = streams.value.log
-      implicit val conv: xsbti.FileConverter = fileConverter.value
-      val scalaInst = (Compile / scalaInstance).value
-      val macroClasspath = toFiles(dependencyClasspath.value) ++ scalaInst.libraryJars.toVector
-      val compilerJars = scalaInst.allJars.toIndexedSeq
-      if (needsCompile) {
-        MojozPlugin.runScalaCompiler(
-          srcs,
-          sbtClsDir,
-          macroClasspath,
-          compilerJars,
-          scalaInst.actualVersion,
-          javaHome.value,
-          log,
+      val projectScalaVersion = (Compile / scalaVersion).value
+      val sbtScalaProvider    = appConfiguration.value.provider.scalaProvider
+      val sbtScalaVersion     = sbtScalaProvider.version()
+      val srcs                = sources.value
+      val sbtClsDir           = sbtClassDirectory.value
+      val stampFile           = sbtClsDir / ".mojoz-macro-compile-stamp"
+      val log                 = streams.value.log
+      val javaHomeVal         = javaHome.value
+      if (MojozPlugin.macroNeedsSubprocess(projectScalaVersion, sbtScalaVersion)) {
+        // Scala 3 on sbt 1: plugin runs on Scala 2; recompile macros for view compiler URLClassLoader
+        val needsCompile = srcs.nonEmpty && (
+          !stampFile.exists() ||
+          srcs.exists(_.lastModified() > stampFile.lastModified())
         )
-        IO.touch(stampFile)
+        if (needsCompile) {
+          MojozPlugin.runScalaCompiler(
+            srcs,
+            sbtClsDir,
+            MojozPlugin.buildClasspath,
+            sbtScalaProvider.jars().toIndexedSeq.toSeq,
+            sbtScalaVersion,
+            javaHomeVal,
+            log,
+          )
+          IO.touch(stampFile)
+        }
       }
     },
   ))
+
+  /** Scala 3 projects on sbt 1 need a Scala 2 macro recompile; sbt 2 and Scala 2 projects use normal compile output. */
+  def macroNeedsSubprocess(projectScalaVersion: String, sbtScalaVersion: String): Boolean =
+    projectScalaVersion.startsWith("3.") && sbtScalaVersion.startsWith("2.")
 
   def runScalaCompiler(
     sources: Seq[File],
