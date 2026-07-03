@@ -381,6 +381,11 @@ object MojozPlugin extends AutoPlugin {
       dest
     },
 
+    Compile / compileIncremental := Def.uncached {
+      mojozBeforeCompile.value
+      (Compile / compileIncremental).value
+    },
+
     Compile / compile := Def.uncached {
       mojozBeforeCompile.value
       (Compile / compile).value
