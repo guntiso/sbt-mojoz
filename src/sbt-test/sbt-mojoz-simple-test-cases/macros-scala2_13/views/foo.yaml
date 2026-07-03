@@ -1,0 +1,7 @@
+name:    foo
+table:   foo
+fields:
+- id
+- name
+- demo_name = demo(name)
+- demo_text = demo('macro involved')

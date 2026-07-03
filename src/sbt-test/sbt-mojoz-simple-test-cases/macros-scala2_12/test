@@ -1,0 +1,10 @@
+# macro compilation and view compilation on Scala 2.12
+> clean
+$ absent target/**/classes/sbtmojoz/macros/Macros.class
+$ absent target/**/classes/sbtmojoz/Test.class
+
+> compile
+$ exists target/**/classes/sbtmojoz/macros/Macros.class
+$ exists target/**/classes/sbtmojoz/Test.class
+$ exists target/**/classes/tresql-macros.txt
+$ exists target/**/classes/tresql-function-signatures.txt
