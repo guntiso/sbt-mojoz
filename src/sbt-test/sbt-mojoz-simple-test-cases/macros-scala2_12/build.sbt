@@ -16,7 +16,7 @@ resolvers += "snapshots" at "https://central.sonatype.com/repository/maven-snaps
 libraryDependencies ++= Seq(
   ("org.mojoz"               %% "querease"                   % "10.1.0").exclude(
   "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
-  ("org.tresql"              %% "tresql"                     % "13.4.0").exclude(
+  ("org.tresql"              %% "tresql"                     % "13.5.1").exclude(
   "org.scala-lang.modules",     "scala-parser-combinators_2.12"), // version conflict fix for plugin
   "org.scala-lang.modules"  %%  "scala-parser-combinators"  % "2.4.0" % "provided",
 )
