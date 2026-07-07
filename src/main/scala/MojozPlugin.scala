@@ -329,7 +329,10 @@ object MojozPlugin extends AutoPlugin {
           IO.relativize(resourceManagedDir, f).map(rel => (f, classDir / rel))
         }
         val unmanagedMappings = (Compile / unmanagedResources).value.flatMap { f =>
-          (Compile / resourceDirectories).value.flatMap(rd => IO.relativize(rd, f)).headOption.map(rel => (f, classDir / rel))
+          val resourceDirs = (Compile / resourceDirectories).value
+          val rel = resourceDirs.flatMap(rd => IO.relativize(rd, f)).headOption
+            .orElse(if (f.isFile) Some(f.getName) else None)
+          rel.map(r => (f, classDir / r))
         }
         managedMappings ++ unmanagedMappings
       }
