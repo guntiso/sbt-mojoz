@@ -315,20 +315,35 @@ object MojozPlugin extends AutoPlugin {
       // FIXME do not search for distinct table names, change mapping structure to support multi-db tables instead?
       val distinctTableNames  = tableNames.distinct.sorted
       def scalaClassNameString(name: String) = classBuilder.scalaNameString(classBuilder.scalaClassName(name))
+      // Avoid "Method too large: dto/DtoMapping$.<clinit>" by splitting large Maps into private methods
+      val mappingChunkSize = 1000
+      def chunkedMap(mapName: String, typeParams: String, entries: Seq[String]): String =
+        if (entries.isEmpty)
+          s"val $mapName = Map[$typeParams]()"
+        else {
+          val chunks = entries.grouped(mappingChunkSize).toSeq
+          val methods = chunks.zipWithIndex.map { case (chunk, i) =>
+            s"""private def ${mapName}_$i: Map[$typeParams] = Map(
+               |    ${chunk.mkString(",\n    ")}
+               |  )""".stripMargin
+          }
+          val initExpr = chunks.indices.map(i => s"${mapName}_$i").mkString(" ++ ")
+          s"""${methods.mkString("\n  ")}
+             |  val $mapName = $initExpr""".stripMargin
+        }
+      val viewNameToClassEntries = viewDefs.map(v =>
+        s""""${v.name}" -> classOf[${scalaClassNameString(v.name)}]"""
+      )
+      val viewClassToTableClassEntries = viewDefs.filter(_.table != null).map(v =>
+        s"classOf[${scalaClassNameString(v.name)}] -> classOf[Tables.${scalaClassNameString(v.table)}]"
+      )
       val mapping = s"""
         |object Tables {
         |  ${distinctTableNames.map(t => s"class ${scalaClassNameString(t)} {}").mkString("\n  ")}
         |}
         |object DtoMapping {
-        |  val viewNameToClass = Map[String, Class[? <: Dto]](
-        |    ${viewDefs.map(v => s""""${v.name}" -> classOf[${scalaClassNameString(v.name)}]""").mkString(",\n    ")}
-        |  )
-        |  val viewClassToTableClass = Map[Class[? <: Dto], Class[?]](
-        |    ${viewDefs.filter(_.table != null).map(v =>
-                s"classOf[${scalaClassNameString(v.name)}] -> classOf[Tables.${scalaClassNameString(v.table)}]"
-               ).mkString(",\n    ")
-             }
-        |  )
+        |  ${chunkedMap("viewNameToClass", "String, Class[? <: Dto]", viewNameToClassEntries)}
+        |  ${chunkedMap("viewClassToTableClass", "Class[? <: Dto], Class[?]", viewClassToTableClassEntries)}
         |}
         |""".stripMargin.trim
       mapping
