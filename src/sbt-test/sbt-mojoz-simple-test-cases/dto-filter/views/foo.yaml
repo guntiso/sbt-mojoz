@@ -1,0 +1,51 @@
+name:    parent
+table:   parent_table
+dto: true
+fields:
+- id
+- name
+- children * child
+order:
+- id
+
+name:    child
+table:   child_table
+fields:
+- id
+- name
+- grandchild * grandchild
+order:
+- id
+
+name:    grandchild
+table:   grandchild_table
+fields:
+- id
+- name
+order:
+- id
+
+name:    ignored
+table:   ignored_table
+fields:
+- id
+- name
+order:
+- id
+
+name:    base
+table:   base_table
+fields:
+- id
+- code
+order:
+- id
+
+name:    extended
+table:   base_table
+dto: true
+extends: base
+fields:
+- name = code
+order:
+- id

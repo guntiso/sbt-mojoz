@@ -1,0 +1,26 @@
+table: parent_table
+columns:
+- id
+- name
+
+table: child_table
+columns:
+- id
+- name
+- parent_id
+
+table: grandchild_table
+columns:
+- id
+- name
+- child_id
+
+table: ignored_table
+columns:
+- id
+- name
+
+table: base_table
+columns:
+- id
+- code

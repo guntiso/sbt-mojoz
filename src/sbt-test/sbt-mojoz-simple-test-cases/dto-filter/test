@@ -1,0 +1,20 @@
+# build project
+> clean
+> compile
+
+# Dtos.scala is created
+$ exists target/**/src_managed/main/Dtos.scala
+
+# views with dto: true
+$ exists target/**/classes/dto/Parent.class
+$ exists target/**/classes/dto/Extended.class
+
+# transitive complex-type references from parent
+$ exists target/**/classes/dto/Child.class
+$ exists target/**/classes/dto/Grandchild.class
+
+# extends base of a selected view
+$ exists target/**/classes/dto/Base.class
+
+# views not selected and not referenced are skipped
+$ absent target/**/classes/dto/Ignored.class
