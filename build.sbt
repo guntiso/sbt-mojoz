@@ -13,14 +13,14 @@ lazy val root = (project in file("."))
     addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0"),
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
-        case "2.12" => "1.12.14"
+        case "2.12" => "1.12.15"
         case _      => "2.0.5"
       }
     },
     scripted / scalaVersion := scala212,
     scriptedSbt := {
       scalaBinaryVersion.value match {
-        case "2.12" => "1.12.14"
+        case "2.12" => "1.12.15"
         case _      => "2.0.5"
       }
     },
