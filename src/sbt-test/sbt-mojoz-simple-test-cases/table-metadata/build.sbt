@@ -23,5 +23,5 @@ Compile / compile := Def.uncached {
 }
 
 libraryDependencies ++= Seq(
-  "org.mojoz"                  %% "querease"                          % "10.1.0",
+  "org.mojoz"                  %% "querease"                          % "10.2.0",
 )
