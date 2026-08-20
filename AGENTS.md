@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with this repository.
 
 ## Project Overview
 
@@ -25,9 +25,10 @@ sbt 'scripted sbt-mojoz-simple-test-cases/compile'
 ```
 Replace `compile` with any test case name from `src/sbt-test/sbt-mojoz-simple-test-cases/`.
 
-### CI Check (version policy + tests)
+### CI Check (both sbt lines + version policy)
+Matches `.github/workflows/ci.yaml`:
 ```bash
-sbt clean scripted versionPolicyCheck
+sbt "++2.12.21; clean; scripted; ++3.8.4; scripted; +versionPolicyCheck"
 ```
 
 ### Publish Locally (for testing in other projects)
@@ -73,7 +74,14 @@ Tests live in `src/sbt-test/sbt-mojoz-simple-test-cases/`, one subdirectory per 
 
 ## Key Dependencies
 
-- **mojoz** — Metadata model (`TableDef`, `ViewDef`) and `ScalaDtoGenerator`, `DdlGenerator`
-- **querease** — View compilation via `ViewCompiler` trait
-- **tresql** — SQL query building; `TableMetadata` consumed by tresql at runtime
-- Scala 2.12.21, Java 11 (enforced via `javacOptions`)
+- **mojoz** 7.2.0 — Metadata model (`TableDef`, `ViewDef`) and `ScalaDtoGenerator`, `DdlGenerator`
+- **querease** 10.2.0 — View compilation via `ViewCompiler` trait
+- **tresql** 13.5.1 — SQL query building; `TableMetadata` consumed by tresql at runtime
+- **sbt2-compat** 0.2.0 — Shared API for the sbt 1 / sbt 2 plugin cross-build
+- **sbt-version-policy** 3.3.0 — Binary-compatibility check (`versionPolicyCheck`)
+
+## Toolchain
+
+- **Java 17** is required to *build* this project (enforced in `initialize`)
+- Cross-built for **sbt 1.12.15** (Scala 2.12.21, JVM 8 bytecode via `-release 8`) and **sbt 2.0.6** (Scala 3.8.4, JVM 17 bytecode)
+- CI runs on **ubuntu-24.04** with Temurin 17 (`actions/checkout@v7`, `actions/setup-java@v5`, `sbt/setup-sbt@v1`)
