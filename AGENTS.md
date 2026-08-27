@@ -84,4 +84,4 @@ Tests live in `src/sbt-test/sbt-mojoz-simple-test-cases/`, one subdirectory per 
 
 - **Java 17** is required to *build* this project (enforced in `initialize`)
 - Cross-built for **sbt 1.13.0** (Scala 2.12.21, JVM 8 bytecode via `-release 8`) and **sbt 2.0.7** (Scala 3.8.4, JVM 17 bytecode)
-- CI runs on **ubuntu-24.04** with Temurin 17 (`actions/checkout@v7`, `actions/setup-java@v5`, `sbt/setup-sbt@v1`)
+- CI runs on **ubuntu-24.04** with Temurin 17 (`actions/checkout@v7`, `actions/setup-java@v6`, `sbt/setup-sbt@v1`)
