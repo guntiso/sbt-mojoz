@@ -75,7 +75,7 @@ Tests live in `src/sbt-test/sbt-mojoz-simple-test-cases/`, one subdirectory per 
 ## Key Dependencies
 
 - **mojoz** 7.2.1 — Metadata model (`TableDef`, `ViewDef`) and `ScalaDtoGenerator`, `DdlGenerator`
-- **querease** 10.2.0 — View compilation via `ViewCompiler` trait
+- **querease** 10.2.1 — View compilation via `ViewCompiler` trait
 - **tresql** 13.5.1 — SQL query building; `TableMetadata` consumed by tresql at runtime
 - **sbt2-compat** 0.2.0 — Shared API for the sbt 1 / sbt 2 plugin cross-build
 - **sbt-version-policy** 3.3.0 — Binary-compatibility check (`versionPolicyCheck`)
