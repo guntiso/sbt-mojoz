@@ -25,10 +25,10 @@ sbt 'scripted sbt-mojoz-simple-test-cases/compile'
 ```
 Replace `compile` with any test case name from `src/sbt-test/sbt-mojoz-simple-test-cases/`.
 
-### CI Check (both sbt lines + version policy)
-Matches `.github/workflows/ci.yaml`:
+### CI Check (one Scala version + version policy)
+Matches one matrix job in `.github/workflows/ci.yaml`. CI runs this twice, once for `2.12.21` (sbt 1) and once for `3.8.4` (sbt 2):
 ```bash
-sbt "++2.12.21; clean; scripted; ++3.8.4; scripted; +versionPolicyCheck"
+sbt "++2.12.21" clean scripted versionPolicyCheck
 ```
 
 ### Publish Locally (for testing in other projects)
@@ -84,4 +84,4 @@ Tests live in `src/sbt-test/sbt-mojoz-simple-test-cases/`, one subdirectory per 
 
 - **Java 17** is required to *build* this project (enforced in `initialize`)
 - Cross-built for **sbt 1.13.0** (Scala 2.12.21, JVM 8 bytecode via `-release 8`) and **sbt 2.0.7** (Scala 3.8.4, JVM 17 bytecode)
-- CI runs on **ubuntu-24.04** with Temurin 17 (`actions/checkout@v7`, `actions/setup-java@v6`, `sbt/setup-sbt@v1`)
+- CI runs on **ubuntu-24.04** with Temurin 17, as a matrix over Scala **2.12.21** and **3.8.4** (`actions/checkout@v7`, `actions/setup-java@v6`, `sbt/setup-sbt@v1`)

@@ -4,9 +4,11 @@ jobs:
   Build-and-test:
     runs-on:  ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os:   [ubuntu-24.04]   # TODO macos-latest, windows-latest
-        java: [17]
+        os:     [ubuntu-24.04]   # TODO macos-latest, windows-latest
+        java:   [17]
+        scala:  ["2.12.21", "3.8.4"]
     steps:
     - name: Checkout
       uses: actions/checkout@v7
@@ -19,4 +21,9 @@ jobs:
     - name: Set up sbt
       uses: sbt/setup-sbt@v1
     - name: Compile and test and check version policy
-      run:  sbt "++2.12.21; clean; scripted; ++3.8.4; scripted; +versionPolicyCheck"
+      # sbt "++2.12.21; clean; scripted; ++3.8.4; scripted; +versionPolicyCheck"
+      run: >
+        sbt
+        "++${{ matrix.scala }}"
+        clean scripted
+        versionPolicyCheck
